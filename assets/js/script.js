@@ -85,7 +85,32 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof Chart !== 'undefined') {
         initializeCharts();
     }
+    
+    // Refresh CSRF token periodically
+    setInterval(refreshToken, 15 * 60 * 1000); // 15 minutes
 });
+
+// Function to refresh CSRF token
+function refreshToken() {
+    fetch('../includes/get_token.php')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.csrf_token) {
+                const csrfFields = document.querySelectorAll('input[name="csrf_token"]');
+                csrfFields.forEach(field => {
+                    field.value = data.csrf_token;
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing CSRF token:', error);
+        });
+}
 
 // Password strength checker
 function checkPasswordStrength(input) {

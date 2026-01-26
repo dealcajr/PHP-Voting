@@ -1,7 +1,7 @@
 <?php
 // SSLG Voting System Configuration
 // Database configuration
-define('DB_HOST', 'localhost');
+define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'sslg_voting');
 define('DB_USER', 'root'); // Change this for production
 define('DB_PASS', ''); // Change this for production

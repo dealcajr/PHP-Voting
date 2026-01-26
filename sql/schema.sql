@@ -18,8 +18,10 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
-Database: `sslg_voting`
+-- Database: `sslg_voting`
 --
+CREATE DATABASE IF NOT EXISTS `sslg_voting` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `sslg_voting`;
 
 -- --------------------------------------------------------
 

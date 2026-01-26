@@ -5,13 +5,30 @@
 CREATE DATABASE IF NOT EXISTS sslg_voting;
 USE sslg_voting;
 
+-- School information
+CREATE TABLE school_info (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    school_name VARCHAR(255) NOT NULL DEFAULT 'Supreme Secondary Learner Government',
+    school_address TEXT,
+    school_logo VARCHAR(255),
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- Users table (for both voters and admins)
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id VARCHAR(20) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('voter', 'admin') NOT NULL DEFAULT 'voter',
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    grade VARCHAR(20),
+    section VARCHAR(20),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    voter_id_card VARCHAR(50) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -46,6 +63,7 @@ CREATE TABLE votes (
 CREATE TABLE election_settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     election_name VARCHAR(100) NOT NULL DEFAULT 'SSLG Election',
+    election_token VARCHAR(64) UNIQUE,
     is_open BOOLEAN NOT NULL DEFAULT FALSE,
     start_date DATETIME,
     end_date DATETIME,
@@ -64,19 +82,24 @@ CREATE TABLE audit_log (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Insert default school info
+INSERT INTO school_info (school_name, school_address, contact_email) VALUES
+('Supreme Secondary Learner Government', 'School Address Here', 'admin@sslg.edu');
+
 -- Insert default election settings
 INSERT INTO election_settings (election_name, is_open) VALUES ('SSLG Election 2024', FALSE);
 
 -- Insert sample admin user (password: admin123 - hashed)
-INSERT INTO users (student_id, password_hash, role) VALUES ('ADMIN001', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
+INSERT INTO users (student_id, password_hash, role, first_name, last_name) VALUES
+('ADMIN001', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'System', 'Administrator');
 
 -- Insert sample voters
-INSERT INTO users (student_id, password_hash, role) VALUES
-('STU001', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'voter'),
-('STU002', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'voter');
+INSERT INTO users (student_id, password_hash, role, first_name, last_name, grade, section) VALUES
+('STU001', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'voter', 'John', 'Doe', '12', 'A'),
+('STU002', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'voter', 'Jane', 'Smith', '12', 'B');
 
 -- Insert sample candidates
-INSERT INTO candidates (name, position, party, section) VALUES
-('John Doe', 'President', 'Party A', 'Grade 12-A'),
-('Jane Smith', 'Vice President', 'Party B', 'Grade 12-B'),
-('Bob Johnson', 'Secretary', 'Party A', 'Grade 11-A');
+INSERT INTO candidates (name, position, party, section, grade) VALUES
+('John Doe', 'President', 'Party A', 'Grade 12-A', '12'),
+('Jane Smith', 'Vice President', 'Party B', 'Grade 12-B', '12'),
+('Bob Johnson', 'Secretary', 'Party A', 'Grade 11-A', '11');

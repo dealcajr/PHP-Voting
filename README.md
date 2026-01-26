@@ -4,151 +4,182 @@ A secure, web-based voting system designed for Supreme Secondary Learner Governm
 
 ## Features
 
-### Voter Features
-- Secure login with Student ID and password
+### 👥 User Roles
+- **Voter (Student)**: Secure login, one-vote-only enforcement, anonymous voting
+- **Admin (SSLG Adviser/COMELEC)**: Full system management, real-time monitoring
+
+### 🗳️ Voter Features
+- Secure login using Student ID + password
 - One-vote-only enforcement per position
-- Clear candidate display with photos, names, parties, and sections
-- Vote confirmation before submission
+- Clear candidate display with photos, names, positions, parties
+- Confirmation page before final submission
 - Non-traceable vote receipt with reference code
-- Automatic logout after voting
-- Results viewing after voting or election closure
+- Automatic logout after voting session
 
-### Admin Features
+### 🛡️ Admin Portal
 - Secure admin login with hashed passwords
+- Session-based authentication
 - Dashboard with real-time statistics
-- Election control (open/close/reset)
-- Candidate management
-- Voter management with CSV import support
+- Candidate management (add/edit/delete)
+- Student management (upload via CSV, activate/deactivate)
+- Election controls (open/close voting, reset election)
+- Voter ID card generation and printing
 - Audit log for all admin actions
-- Real-time results with charts
 
-### Security Features
+### 🔒 Security Features
 - Password hashing using bcrypt
-- Prepared statements to prevent SQL injection
+- Prepared statements (PDO) to prevent SQL injection
 - CSRF protection on all forms
 - Input validation and sanitization
 - Role-based access control (RBAC)
 - Session timeout and logout protection
-- Anonymous voting with vote integrity hashing
-- Audit logging for admin actions
+- Anonymous voting (votes stored separately from voter identity)
+- Election token system for additional security
 
 ## System Requirements
 
 - PHP 7.4 or higher
 - MySQL 5.7 or higher
-- Web server (Apache/Nginx) or PHP built-in server
+- Web server (Apache/Nginx)
 - Chrome browser (optimized for Chromebook R11)
 
 ## Installation
 
-1. **Clone or download the project files** to your web server directory.
+### 1. Database Setup
 
-2. **Set up the database:**
-   - Create a MySQL database named `sslg_voting`
-   - Import the schema from `sql/schema.sql`
-   - Update database credentials in `includes/config.php`
+1. Create a new MySQL database named `sslg_voting`
+2. Import the database schema from `sql/schema.sql`
 
-3. **Configure the application:**
-   - Edit `includes/config.php` with your database credentials
-   - Ensure the `assets/images/` directory is writable for candidate photos
-
-4. **Access the application:**
-   - Open `login.php` in your browser
-   - Default admin credentials: Student ID: `ADMIN001`, Password: `admin123`
-
-## Project Structure
-
-```
-sslg-voting-system/
-├── includes/
-│   └── config.php          # Configuration and security functions
-├── sql/
-│   └── schema.sql          # Database schema and sample data
-├── admin/
-│   └── dashboard.php       # Admin dashboard
-├── assets/
-│   ├── css/
-│   │   └── style.css       # Main stylesheet
-│   ├── js/
-│   │   └── script.js       # Client-side JavaScript
-│   └── images/             # Candidate photos
-├── login.php               # Login page
-├── vote.php                # Voting interface
-├── results.php             # Election results
-├── logout.php              # Logout handler
-└── README.md               # This file
+```sql
+mysql -u root -p sslg_voting < sql/schema.sql
 ```
 
-## Database Schema
+### 2. Configuration
 
-### Tables
-- `users`: Voter and admin accounts
-- `candidates`: Election candidates
-- `votes`: Anonymous vote records
-- `election_settings`: Election configuration
-- `audit_log`: Admin action logging
+1. Update database credentials in `includes/config.php`:
+```php
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'sslg_voting');
+define('DB_USER', 'your_username');
+define('DB_PASS', 'your_password');
+```
 
-### Key Security Features
-- Votes are stored anonymously with voter_id but not directly linked to voter identity
-- Each vote has a SHA256 hash for integrity verification
-- Unique constraints prevent multiple votes per position
-- Audit log tracks all admin actions with timestamps and IP addresses
+2. Ensure the `assets/images/` directory is writable for photo uploads:
+```bash
+chmod 755 assets/images/
+```
+
+### 3. Web Server Setup
+
+Place the project files in your web server's document root (e.g., `/var/www/html/` or `htdocs/` for XAMPP).
+
+### 4. Access the System
+
+- **Home Page**: `http://localhost/index.php`
+- **Admin Login**: `http://localhost/login.php` (use ADMIN001/admin123)
+- **Student Login**: `http://localhost/login.php` (use STU001/admin123)
 
 ## Usage
 
+### For Administrators
+
+1. **Login** with admin credentials
+2. **Configure School Information** in Admin → School Info
+3. **Upload Students** via CSV in Admin → Students
+4. **Add Candidates** in Admin → Candidates
+5. **Generate Election Token** in Admin → Election Settings
+6. **Open Election** when ready
+7. **Monitor** voting progress on the dashboard
+8. **Close Election** when voting period ends
+9. **View Results** and export data
+
 ### For Voters
-1. Log in with Student ID and password
-2. Review candidates for each position
-3. Select one candidate per position
-4. Confirm and submit your vote
-5. Receive a receipt code (keep for reference)
-6. View results after voting
 
-### For Admins
-1. Log in with admin credentials
-2. Monitor election statistics on the dashboard
-3. Open/close the election as needed
-4. Manage candidates and voters
-5. View audit logs and results
+1. **Login** with student ID and password
+2. **Access Voting** using the election token (if required)
+3. **Review Candidates** for each position
+4. **Cast Votes** for available positions
+5. **Confirm** vote submission
+6. **View Results** after voting or when election closes
 
-## Security Explanations
+## CSV Format for Student Upload
 
-### Password Security
-- Passwords are hashed using `password_hash()` with bcrypt algorithm
-- No plain-text passwords stored in database
+Create a CSV file with the following columns:
+```
+student_id,first_name,last_name,grade,section,password
+STU001,John,Doe,12,A,password123
+STU002,Jane,Smith,12,B,password456
+```
 
-### SQL Injection Prevention
-- All database queries use prepared statements with PDO
-- User input is parameterized, not concatenated into SQL strings
+## Security Considerations
 
-### CSRF Protection
-- All forms include a unique CSRF token generated per session
-- Tokens are validated on form submission
+- Change default admin password immediately
+- Use HTTPS in production
+- Regularly backup the database
+- Monitor audit logs for suspicious activity
+- Keep PHP and MySQL updated
+- Use strong passwords for all accounts
 
-### Session Security
-- Sessions timeout after 30 minutes of inactivity
-- Secure session handling prevents fixation attacks
+## File Structure
 
-### Vote Anonymity
-- Votes are stored separately from voter personal information
-- Receipt codes are randomly generated and not linked to voter identity
-- Vote integrity ensured through cryptographic hashing
+```
+sslg-voting/
+├── index.php              # Home page
+├── login.php              # Login page
+├── vote.php               # Voting interface
+├── results.php            # Election results
+├── logout.php             # Logout handler
+├── admin/                 # Admin panel
+│   ├── dashboard.php      # Admin dashboard
+│   ├── school.php         # School info management
+│   ├── students.php       # Student management
+│   ├── candidates.php     # Candidate management
+│   ├── election.php       # Election settings
+│   └── print_ids.php      # Voter ID printing
+├── includes/              # Core files
+│   └── config.php         # Configuration and functions
+├── assets/                # Static assets
+│   ├── css/
+│   ├── js/
+│   └── images/
+├── sql/                   # Database files
+│   └── schema.sql         # Database schema
+└── README.md              # This file
+```
 
-### Access Control
-- Role-based permissions restrict access to admin functions
-- Voters cannot access admin areas, admins cannot vote
+## Troubleshooting
 
-## Development Notes
+### Common Issues
 
-- Optimized for Chromebook R11 with responsive Bootstrap UI
-- Uses Chart.js for result visualization
-- Lightweight and fast-loading for limited hardware resources
-- Compatible with PHP built-in server for testing
+1. **Database Connection Error**
+   - Verify database credentials in `config.php`
+   - Ensure MySQL service is running
+   - Check database exists and user has permissions
+
+2. **File Upload Errors**
+   - Ensure `assets/images/` directory exists and is writable
+   - Check PHP upload limits in `php.ini`
+
+3. **Session Issues**
+   - Ensure `session.save_path` is writable
+   - Check for conflicting session configurations
+
+4. **Permission Errors**
+   - Set proper file permissions (755 for directories, 644 for files)
+   - Ensure web server user can read/write necessary directories
+
+### Debug Mode
+
+Enable error reporting for debugging:
+```php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+```
 
 ## License
 
-This project is provided as-is for educational purposes. Modify and distribute according to your needs.
+This project is developed for educational purposes. Please ensure compliance with local election laws and regulations when deploying in production.
 
 ## Support
 
-For issues or questions, please check the code comments and configuration files for guidance.
+For technical support or questions, please contact the development team.

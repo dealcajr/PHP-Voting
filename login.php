@@ -4,7 +4,7 @@ require_once 'includes/config.php';
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'admin') {
-        header('Location: admin/dashboard.php');
+        header('Location: admin/index.php');
     } else {
         header('Location: vote.php');
     }
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         // Redirect based on role
                         if ($user['role'] === 'admin') {
-                            header('Location: admin/dashboard.php');
+                            header('Location: admin/index.php');
                         } else {
                             header('Location: vote.php');
                         }
@@ -77,7 +77,7 @@ $access_denied = isset($_GET['access_denied']) ? 'Access denied. Please log in.'
 </head>
 <body class="bg-light">
     <div class="container">
-        <div class="row justify-content-center mt-5">
+        <div class="row justify-content-center mt-10">
             <div class="col-md-6">
                 <div class="card shadow">
                     <div class="card-header bg-primary text-white text-center">

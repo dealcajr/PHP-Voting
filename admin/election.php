@@ -1,6 +1,5 @@
 <?php
 require_once '../includes/config.php';
-require_once '../includes/functions.php';
 requireRole('admin');
 
 $db = getDBConnection();
@@ -132,7 +131,7 @@ include '../includes/admin_sidebar.php';
 
                     <?php if (!empty($election['election_token'])): ?>
                         <div class="alert alert-info">
-                            <strong>Current Token:</strong> <code><?php echo htmlspecialchars($election['election_token']); ?></code>
+                            <strong>Current Token:</strong> code><?php echo htmlspecialchars($election['election_token']); ?></code>
                         </div>
                     <?php else: ?>
                         <div class="alert alert-warning">

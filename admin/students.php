@@ -37,7 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_csv'])) {
 
                         if (!empty($student_id) && !empty($password)) {
                             // Check if student already exists
-                            $existing = $db->prepare("SELECT id FROM users WHERE student_id = ?")->execute([$student_id])->fetch();
+                            $stmt = $db->prepare("SELECT id FROM users WHERE student_id = ?");
+                            $stmt->execute([$student_id]);
+                            $existing = $stmt->fetch();
 
                             if (!$existing) {
                                 $password_hash = password_hash($password, PASSWORD_DEFAULT);

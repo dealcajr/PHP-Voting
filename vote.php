@@ -12,10 +12,11 @@ checkSessionTimeout();
 
 // Get election settings
 $db = getDBConnection();
-$election = $db->query("SELECT * FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$election_stmt = $db->query("SELECT * FROM election_settings ORDER BY id DESC LIMIT 1");
+$election = $election_stmt->fetch();
 
 // Check if election is open
-if (!$election['is_open']) {
+if (!$election || !$election['is_open']) {
     echo "<div class='alert alert-info'>The election is currently closed. Please check back later.</div>";
     exit();
 }
@@ -31,17 +32,21 @@ if (!empty($election['election_token'])) {
 
 // Check if user has already voted for all positions
 $user_id = $_SESSION['user_id'];
-$positions = $db->query("SELECT DISTINCT position FROM candidates WHERE is_active = 1 ORDER BY position")->fetchAll(PDO::FETCH_COLUMN);
+$positions_stmt = $db->query("SELECT DISTINCT position FROM candidates WHERE is_active = 1 ORDER BY position");
+$positions = $positions_stmt->fetchAll(PDO::FETCH_COLUMN);
 $has_voted_all = true;
-foreach ($positions as $position) {
-    $has_voted = $db->prepare("SELECT COUNT(*) FROM votes WHERE voter_id = ? AND position = ?")->execute([$user_id, $position])->fetchColumn() > 0;
-    if (!$has_voted) {
-        $has_voted_all = false;
-        break;
+if ($positions) {
+    foreach ($positions as $position) {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM votes WHERE voter_id = ? AND position = ?");
+        $stmt->execute([$user_id, $position]);
+        if ($stmt->fetchColumn() == 0) {
+            $has_voted_all = false;
+            break;
+        }
     }
 }
 
-if ($has_voted_all) {
+if ($has_voted_all && $positions) {
     echo "<div class='alert alert-success'>You have already voted for all positions. Thank you for participating!</div>";
     echo "<a href='results.php' class='btn btn-primary'>View Results</a>";
     exit();
@@ -67,11 +72,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
 
                 foreach ($votes as $position => $candidate_id) {
                     // Check if user already voted for this position
-                    $existing_vote = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ?")->execute([$user_id, $position])->fetch();
+                    $stmt = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ?");
+                    $stmt->execute([$user_id, $position]);
+                    $existing_vote = $stmt->fetch();
 
                     if (!$existing_vote) {
                         // Get candidate info
-                        $candidate = $db->prepare("SELECT * FROM candidates WHERE id = ? AND is_active = 1")->execute([$candidate_id])->fetch();
+                        $stmt = $db->prepare("SELECT * FROM candidates WHERE id = ? AND is_active = 1");
+                        $stmt->execute([$candidate_id]);
+                        $candidate = $stmt->fetch();
 
                         if ($candidate) {
                             // Create vote hash for integrity
@@ -107,20 +116,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
 
 // Get candidates grouped by position
 $candidates_by_position = [];
-foreach ($positions as $position) {
-    $stmt = $db->prepare("SELECT * FROM candidates WHERE position = ? AND is_active = 1 ORDER BY name");
-    $stmt->execute([$position]);
-    $candidates_by_position[$position] = $stmt->fetchAll();
+if($positions) {
+    foreach ($positions as $position) {
+        $stmt = $db->prepare("SELECT * FROM candidates WHERE position = ? AND is_active = 1 ORDER BY name");
+        $stmt->execute([$position]);
+        $candidates_by_position[$position] = $stmt->fetchAll();
+    }
 }
+
 
 // Check which positions user has already voted for
 $voted_positions = [];
-foreach ($positions as $position) {
-    $voted = $db->prepare("SELECT COUNT(*) FROM votes WHERE voter_id = ? AND position = ?")->execute([$user_id, $position])->fetchColumn() > 0;
-    if ($voted) {
-        $voted_positions[] = $position;
+if ($positions) {
+    foreach ($positions as $position) {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM votes WHERE voter_id = ? AND position = ?");
+        $stmt->execute([$user_id, $position]);
+        if ($stmt->fetchColumn() > 0) {
+            $voted_positions[] = $position;
+        }
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -242,7 +258,7 @@ foreach ($positions as $position) {
                     </div>
                     <div class="card-body">
                         <div class="progress mb-3" style="height: 20px;">
-                            <?php $progress = (count($voted_positions) / count($positions)) * 100; ?>
+                            <?php $progress = count($positions) > 0 ? (count($voted_positions) / count($positions)) * 100 : 0; ?>
                             <div class="progress-bar" role="progressbar" style="width: <?php echo $progress; ?>%" aria-valuenow="<?php echo $progress; ?>" aria-valuemin="0" aria-valuemax="100">
                                 <?php echo round($progress, 1); ?>%
                             </div>

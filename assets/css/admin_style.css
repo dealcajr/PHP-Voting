@@ -1,0 +1,63 @@
+/* Basic Admin Styles */
+body {
+    background-color: #f8f9fa;
+}
+
+.admin-wrapper {
+    display: flex;
+}
+
+.admin-header {
+    background-color: #343a40;
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-header .navbar-brand {
+    color: #fff;
+}
+
+.admin-sidebar {
+    width: 250px;
+    background-color: #343a40;
+    padding: 20px;
+}
+
+.admin-sidebar .nav-link {
+    color: #adb5bd;
+}
+
+.admin-sidebar .nav-link.active,
+.admin-sidebar .nav-link:hover {
+    color: #fff;
+}
+
+.admin-main {
+    flex-grow: 1;
+    padding: 20px;
+}
+
+.admin-content h2 {
+    margin-bottom: 20px;
+}
+
+.widget {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.widget h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+.widget p {
+    font-size: 1.5rem;
+    font-weight: bold;
+}

@@ -1,11 +1,7 @@
 <?php
 require_once '../includes/config.php';
-
-// Check session and role
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: ../login.php');
-    exit();
-}
+require_once '../includes/functions.php';
+requireRole('admin');
 
 $db = getDBConnection();
 $message = '';
@@ -80,157 +76,140 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+include '../includes/admin_header.php';
+include '../includes/admin_sidebar.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo APP_NAME; ?> - Election Settings</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../assets/css/style.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#"><?php echo APP_NAME; ?> - Admin</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="dashboard.php">Dashboard</a>
-                <a class="nav-link" href="../logout.php">Logout</a>
+
+<div class="admin-content">
+    <h1>Election Settings</h1>
+    <?php echo $message; ?>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Election Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Election Configuration</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                        <input type="hidden" name="action" value="update_settings">
+
+                        <div class="mb-3">
+                            <label for="election_name" class="form-label">Election Name</label>
+                            <input type="text" class="form-control" id="election_name" name="election_name" value="<?php echo htmlspecialchars($election['election_name'] ?? ''); ?>" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label">Start Date & Time</label>
+                                    <input type="datetime-local" class="form-control" id="start_date" name="start_date" value="<?php echo $election['start_date'] ? date('Y-m-d\TH:i', strtotime($election['start_date'])) : ''; ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label">End Date & Time</label>
+                                    <input type="datetime-local" class="form-control" id="end_date" name="end_date" value="<?php echo $election['end_date'] ? date('Y-m-d\TH:i', strtotime($election['end_date'])) : ''; ?>">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Update Settings</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Election Token -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Election Access Token</h4>
+                </div>
+                <div class="card-body">
+                    <p>The election token is required for voters to access the voting system. Generate a new token or clear the existing one.</p>
+
+                    <?php if (!empty($election['election_token'])): ?>
+                        <div class="alert alert-info">
+                            <strong>Current Token:</strong> <code><?php echo htmlspecialchars($election['election_token']); ?></code>
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-warning">
+                            No election token is currently set. Voters will not be able to access the voting system.
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                        <input type="hidden" name="action" value="generate_token">
+                        <button type="submit" class="btn btn-success me-2">Generate New Token</button>
+                    </form>
+
+                    <?php if (!empty($election['election_token'])): ?>
+                        <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to clear the election token? This will prevent voters from accessing the system.')">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="clear_token">
+                            <button type="submit" class="btn btn-warning">Clear Token</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
-    </nav>
 
-    <div class="container mt-4">
-        <h1>Election Settings</h1>
-        <?php echo $message; ?>
-
-        <div class="row">
-            <div class="col-md-8">
-                <!-- Election Settings -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h4>Election Configuration</h4>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST" action="">
-                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                            <input type="hidden" name="action" value="update_settings">
-
-                            <div class="mb-3">
-                                <label for="election_name" class="form-label">Election Name</label>
-                                <input type="text" class="form-control" id="election_name" name="election_name" value="<?php echo htmlspecialchars($election['election_name'] ?? ''); ?>" required>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="start_date" class="form-label">Start Date & Time</label>
-                                        <input type="datetime-local" class="form-control" id="start_date" name="start_date" value="<?php echo $election['start_date'] ? date('Y-m-d\TH:i', strtotime($election['start_date'])) : ''; ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="end_date" class="form-label">End Date & Time</label>
-                                        <input type="datetime-local" class="form-control" id="end_date" name="end_date" value="<?php echo $election['end_date'] ? date('Y-m-d\TH:i', strtotime($election['end_date'])) : ''; ?>">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary">Update Settings</button>
-                        </form>
-                    </div>
+        <div class="col-md-4">
+            <!-- Election Status & Controls -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Election Status</h4>
                 </div>
+                <div class="card-body text-center">
+                    <span class="badge <?php echo $election['is_open'] ? 'bg-success fs-5' : 'bg-danger fs-5'; ?> mb-3">
+                        <?php echo $election['is_open'] ? 'OPEN' : 'CLOSED'; ?>
+                    </span>
 
-                <!-- Election Token -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h4>Election Access Token</h4>
-                    </div>
-                    <div class="card-body">
-                        <p>The election token is required for voters to access the voting system. Generate a new token or clear the existing one.</p>
+                    <form method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                        <input type="hidden" name="action" value="<?php echo $election['is_open'] ? 'close_election' : 'open_election'; ?>">
+                        <button type="submit" class="btn btn-<?php echo $election['is_open'] ? 'danger' : 'success'; ?> w-100 mb-2">
+                            <?php echo $election['is_open'] ? 'Close Election' : 'Open Election'; ?>
+                        </button>
+                    </form>
 
-                        <?php if (!empty($election['election_token'])): ?>
-                            <div class="alert alert-info">
-                                <strong>Current Token:</strong> <code><?php echo htmlspecialchars($election['election_token']); ?></code>
-                            </div>
-                        <?php else: ?>
-                            <div class="alert alert-warning">
-                                No election token is currently set. Voters will not be able to access the voting system.
-                            </div>
-                        <?php endif; ?>
-
-                        <form method="POST" class="d-inline">
-                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                            <input type="hidden" name="action" value="generate_token">
-                            <button type="submit" class="btn btn-success me-2">Generate New Token</button>
-                        </form>
-
-                        <?php if (!empty($election['election_token'])): ?>
-                            <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to clear the election token? This will prevent voters from accessing the system.')">
-                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                <input type="hidden" name="action" value="clear_token">
-                                <button type="submit" class="btn btn-warning">Clear Token</button>
-                            </form>
-                        <?php endif; ?>
-                    </div>
+                    <button type="button" class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#resetModal">
+                        Reset Election Data
+                    </button>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <!-- Election Status & Controls -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h4>Election Status</h4>
-                    </div>
-                    <div class="card-body text-center">
-                        <span class="badge <?php echo $election['is_open'] ? 'bg-success fs-5' : 'bg-danger fs-5'; ?> mb-3">
-                            <?php echo $election['is_open'] ? 'OPEN' : 'CLOSED'; ?>
-                        </span>
-
-                        <form method="POST" class="d-inline">
-                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                            <input type="hidden" name="action" value="<?php echo $election['is_open'] ? 'close_election' : 'open_election'; ?>">
-                            <button type="submit" class="btn btn-<?php echo $election['is_open'] ? 'danger' : 'success'; ?> w-100 mb-2">
-                                <?php echo $election['is_open'] ? 'Close Election' : 'Open Election'; ?>
-                            </button>
-                        </form>
-
-                        <button type="button" class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#resetModal">
-                            Reset Election Data
-                        </button>
-                    </div>
+            <!-- Quick Stats -->
+            <div class="card">
+                <div class="card-header">
+                    <h4>Quick Stats</h4>
                 </div>
-
-                <!-- Quick Stats -->
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Quick Stats</h4>
-                    </div>
-                    <div class="card-body">
-                        <?php
-                        $total_voters = $db->query("SELECT COUNT(*) FROM users WHERE role = 'voter' AND is_active = 1")->fetchColumn();
-                        $total_votes = $db->query("SELECT COUNT(DISTINCT voter_id) FROM votes")->fetchColumn();
-                        $total_candidates = $db->query("SELECT COUNT(*) FROM candidates WHERE is_active = 1")->fetchColumn();
-                        ?>
-                        <div class="row text-center">
-                            <div class="col-12 mb-2">
-                                <div class="border rounded p-2">
-                                    <div class="h5 mb-0"><?php echo $total_voters; ?></div>
-                                    <small class="text-muted">Active Voters</small>
-                                </div>
+                <div class="card-body">
+                    <?php
+                    $total_voters = $db->query("SELECT COUNT(*) FROM users WHERE role = 'voter' AND is_active = 1")->fetchColumn();
+                    $total_votes = $db->query("SELECT COUNT(DISTINCT voter_id) FROM votes")->fetchColumn();
+                    $total_candidates = $db->query("SELECT COUNT(*) FROM candidates WHERE is_active = 1")->fetchColumn();
+                    ?>
+                    <div class="row text-center">
+                        <div class="col-12 mb-2">
+                            <div class="border rounded p-2">
+                                <div class="h5 mb-0"><?php echo $total_voters; ?></div>
+                                <small class="text-muted">Active Voters</small>
                             </div>
-                            <div class="col-12 mb-2">
-                                <div class="border rounded p-2">
-                                    <div class="h5 mb-0"><?php echo $total_votes; ?></div>
-                                    <small class="text-muted">Votes Cast</small>
-                                </div>
+                        </div>
+                        <div class="col-12 mb-2">
+                            <div class="border rounded p-2">
+                                <div class="h5 mb-0"><?php echo $total_votes; ?></div>
+                                <small class="text-muted">Votes Cast</small>
                             </div>
-                            <div class="col-12">
-                                <div class="border rounded p-2">
-                                    <div class="h5 mb-0"><?php echo $total_candidates; ?></div>
-                                    <small class="text-muted">Active Candidates</small>
-                                </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-2">
+                                <div class="h5 mb-0"><?php echo $total_candidates; ?></div>
+                                <small class="text-muted">Active Candidates</small>
                             </div>
                         </div>
                     </div>
@@ -238,15 +217,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Reset Confirmation Modal -->
-    <div class="modal fade" id="resetModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Reset Election Data</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+<!-- Reset Confirmation Modal -->
+<div class="modal fade" id="resetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reset Election Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="resetForm" method="POST">
                 <div class="modal-body">
                     <div class="alert alert-danger">
                         <strong>Warning:</strong> This will permanently delete all votes and most audit logs. This action cannot be undone.
@@ -256,31 +237,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form method="POST" class="d-inline">
-                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                        <input type="hidden" name="action" value="reset_election">
-                        <input type="hidden" name="confirm_reset" id="confirmResetInput" value="">
-                        <button type="submit" class="btn btn-danger" id="resetBtn" disabled>Reset Election Data</button>
-                    </form>
+                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                    <input type="hidden" name="action" value="reset_election">
+                    <input type="hidden" name="confirm_reset" id="confirmResetInput" value="">
+                    <button type="submit" class="btn btn-danger" id="resetBtn" disabled>Reset Election Data</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Reset confirmation
-        document.getElementById('resetConfirm').addEventListener('input', function() {
-            const btn = document.getElementById('resetBtn');
-            const input = document.getElementById('confirmResetInput');
+<script>
+    // Reset confirmation
+    const resetConfirmInput = document.getElementById('resetConfirm');
+    const resetBtn = document.getElementById('resetBtn');
+    const confirmResetInput = document.getElementById('confirmResetInput');
+
+    if(resetConfirmInput) {
+        resetConfirmInput.addEventListener('input', function() {
             if (this.value === 'RESET') {
-                btn.disabled = false;
-                input.value = 'RESET';
+                resetBtn.disabled = false;
+                confirmResetInput.value = 'RESET';
             } else {
-                btn.disabled = true;
-                input.value = '';
+                resetBtn.disabled = true;
+                confirmResetInput.value = '';
             }
         });
-    </script>
-</body>
-</html>
+    }
+</script>
+
+<?php include '../includes/admin_footer.php'; ?>

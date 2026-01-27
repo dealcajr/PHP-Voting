@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $db = getDBConnection();
-                $stmt = $db->prepare("SELECT id, password_hash, role, is_active FROM users WHERE student_id = ?");
+                $stmt = $db->prepare("SELECT id, password_hash, role, is_active, first_name FROM users WHERE student_id = ?");
                 $stmt->execute([$student_id]);
                 $user = $stmt->fetch();
 
@@ -37,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['user_id'] = $user['id'];
                         $_SESSION['student_id'] = $student_id;
                         $_SESSION['role'] = $user['role'];
+                        $_SESSION['first_name'] = $user['first_name'];
 
                         // Log admin login
                         if ($user['role'] === 'admin') {
@@ -62,6 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Get school name
+$db = getDBConnection();
+$stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
+$school_name = $stmt->fetchColumn();
+
 // Check for timeout or access denied messages
 $timeout = isset($_GET['timeout']) ? 'Your session has expired. Please log in again.' : '';
 $access_denied = isset($_GET['access_denied']) ? 'Access denied. Please log in.' : '';
@@ -71,10 +77,11 @@ $access_denied = isset($_GET['access_denied']) ? 'Access denied. Please log in.'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo APP_NAME; ?> - Login</title>
+    <title><?php echo $school_name ?? APP_NAME; ?> - Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
+<<<<<<< HEAD
 <body class="bg-light">
     <div class="container">
         <div class="row justify-content-center mt-10">
@@ -93,23 +100,43 @@ $access_denied = isset($_GET['access_denied']) ? 'Access denied. Please log in.'
                         <?php if ($access_denied): ?>
                             <div class="alert alert-warning"><?php echo $access_denied; ?></div>
                         <?php endif; ?>
+=======
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-branding">
+                <h1><?php echo htmlspecialchars($school_name ?? APP_NAME); ?></h1>
+                <p class="lead">SSLG Online Voting System</p>
+            </div>
+            <div class="login-form">
+                <h2 class="text-center mb-4">Sign In</h2>
+                <p class="text-center text-muted mb-4">Use your Student ID to continue.</p>
+>>>>>>> c00d95e (EME2)
 
-                        <form method="POST" action="">
-                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                            <div class="mb-3">
-                                <label for="student_id" class="form-label">Student ID</label>
-                                <input type="text" class="form-control" id="student_id" name="student_id" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">Login</button>
-                            </div>
-                        </form>
+                <?php if ($login_error): ?>
+                    <div class="alert alert-danger"><?php echo $login_error; ?></div>
+                <?php endif; ?>
+                <?php if ($timeout): ?>
+                    <div class="alert alert-warning"><?php echo $timeout; ?></div>
+                <?php endif; ?>
+                <?php if ($access_denied): ?>
+                    <div class="alert alert-warning"><?php echo $access_denied; ?></div>
+                <?php endif; ?>
+
+                <form method="POST" action="">
+                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Student ID</label>
+                        <input type="text" class="form-control form-control-lg" id="student_id" name="student_id" required autofocus>
                     </div>
-                </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control form-control-lg" id="password" name="password" required>
+                    </div>
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Login</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

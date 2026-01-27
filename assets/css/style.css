@@ -186,3 +186,58 @@ body {
         display: none !important;
     }
 }
+
+/* Google-style Login Page */
+.login-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+}
+
+.login-card {
+    display: flex;
+    width: 100%;
+    max-width: 900px;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.login-branding {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.login-branding h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.login-form {
+    padding: 40px;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+@media (max-width: 767px) {
+    .login-card {
+        flex-direction: column;
+    }
+    .login-branding {
+        padding: 30px;
+    }
+    .login-form {
+        padding: 30px;
+    }
+}

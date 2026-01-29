@@ -53,7 +53,7 @@ include '../includes/admin_sidebar.php';
                         <a href="election.php" class="btn btn-primary">Manage Election</a>
                         <a href="candidates.php" class="btn btn-secondary">Manage Candidates</a>
                         <a href="students.php" class="btn btn-info">Manage Students</a>
-                    </div>
+                        <a href="../register.php" class="btn btn-outline-success">Register New Student</a>
                 </div>
             </div>
         </div>

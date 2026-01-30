@@ -6,7 +6,7 @@ if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'admin') {
         header('Location: admin/index.php');
     } else {
-        header('Location: vote.php');
+        header('Location: index.php');
     }
     exit();
 }
@@ -25,13 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $db = getDBConnection();
-                $stmt = $db->prepare("SELECT id, password_hash, role, is_active, first_name FROM users WHERE student_id = ?");
+                $stmt = $db->prepare("SELECT id, password_hash, role, is_active, first_name FROM users WHERE student_id = ? AND role = 'admin'");
                 $stmt->execute([$student_id]);
                 $user = $stmt->fetch();
 
                 if ($user && password_verify($password, $user['password_hash'])) {
                     if (!$user['is_active']) {
-                        $login_error = 'Your account is deactivated. Please contact an administrator.';
+                        $login_error = 'Your account is deactivated. Please contact system administrator.';
                     } else {
                         // Successful login
                         $_SESSION['user_id'] = $user['id'];
@@ -40,32 +40,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['first_name'] = $user['first_name'];
 
                         // Log admin login
-                        if ($user['role'] === 'admin') {
-                            logAdminAction('login', 'Admin logged in');
-                        }
+                        logAdminAction('admin_login', 'Administrator logged in');
 
-                        // Redirect based on role
-                        if ($user['role'] === 'admin') {
-                            header('Location: admin/index.php');
-                        } else {
-                            // For voters, check if election token is required
-                            $db = getDBConnection();
-                            $election_stmt = $db->query("SELECT election_token FROM election_settings WHERE is_open = 1 ORDER BY id DESC LIMIT 1");
-                            $election = $election_stmt->fetch();
-                            if ($election && !empty($election['election_token'])) {
-                                header('Location: token_input.php');
-                            } else {
-                                header('Location: vote.php');
-                            }
-                        }
+                        header('Location: admin/index.php');
                         exit();
                     }
                 } else {
-                    $login_error = 'Invalid Student ID or Password.';
+                    $login_error = 'Invalid administrator credentials.';
                 }
             } catch (PDOException $e) {
                 $login_error = 'Database error. Please try again later.';
-                error_log("Login error: " . $e->getMessage());
+                error_log("Admin login error: " . $e->getMessage());
             }
         }
     }
@@ -75,17 +60,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $db = getDBConnection();
 $stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
 $school_name = $stmt->fetchColumn();
-
-// Check for timeout or access denied messages
-$timeout = isset($_GET['timeout']) ? 'Your session has expired. Please log in again.' : '';
-$access_denied = isset($_GET['access_denied']) ? 'Access denied. Please log in.' : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $school_name ?? APP_NAME; ?> - Login</title>
+    <title><?php echo $school_name ?? APP_NAME; ?> - Admin Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
@@ -94,39 +75,33 @@ $access_denied = isset($_GET['access_denied']) ? 'Access denied. Please log in.'
         <div class="login-card">
             <div class="login-branding">
                 <h1><?php echo htmlspecialchars($school_name ?? APP_NAME); ?></h1>
-                <p class="lead">SSLG Voting System</p>
+                <p class="lead">Administrator Access</p>
             </div>
             <div class="login-form">
-                <h2 class="text-center mb-4">Sign In</h2>
-                <p class="text-center text-muted mb-4">Use your Student ID to continue.</p>
+                <h2 class="text-center mb-4">Admin Login</h2>
+                <p class="text-center text-muted mb-4">Enter your administrator credentials to access the system.</p>
 
                 <?php if ($login_error): ?>
                     <div class="alert alert-danger"><?php echo $login_error; ?></div>
-                <?php endif; ?>
-                <?php if ($timeout): ?>
-                    <div class="alert alert-warning"><?php echo $timeout; ?></div>
-                <?php endif; ?>
-                <?php if ($access_denied): ?>
-                    <div class="alert alert-warning"><?php echo $access_denied; ?></div>
                 <?php endif; ?>
 
                 <form method="POST" action="">
                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <div class="mb-3">
-                        <label for="student_id" class="form-label">Student ID</label>
-                        <input type="text" class="form-control form-control-lg" id="student_id" name="student_id" required autofocus>
+                        <label for="student_id" class="form-label">Administrator ID</label>
+                        <input type="text" class="form-control form-control-lg" id="student_id" name="student_id" required autofocus placeholder="Enter admin ID">
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control form-control-lg" id="password" name="password" required>
+                        <input type="password" class="form-control form-control-lg" id="password" name="password" required placeholder="Enter password">
                     </div>
                     <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">Login</button>
+                        <button type="submit" class="btn btn-primary btn-lg">Login as Administrator</button>
                     </div>
                 </form>
 
                 <div class="text-center mt-3">
-                    <p>Don't have an account? <a href="student_register.php">Register here</a></p>
+                    <a href="index.php" class="text-muted">← Back to Main Menu</a>
                 </div>
             </div>
         </div>

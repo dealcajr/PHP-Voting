@@ -67,7 +67,7 @@ if ($show_results) {
             <a class="navbar-brand" href="#"><?php echo APP_NAME; ?></a>
             <div class="navbar-nav ms-auto">
                 <?php if ($_SESSION['role'] === 'admin'): ?>
-                    <a class="nav-link" href="admin/dashboard.php">Admin Dashboard</a>
+                    <a class="nav-link" href="admin/index.php">Admin Dashboard</a>
                 <?php else: ?>
                     <a class="nav-link" href="vote.php">Vote</a>
                 <?php endif; ?>

@@ -83,6 +83,41 @@ function sanitizeInput($data) {
     return htmlspecialchars(trim($data), ENT_QUOTES, 'UTF-8');
 }
 
+// Generate unique student ID
+function generateStudentID() {
+    $db = getDBConnection();
+
+    // Find the highest existing StuXXX ID
+    $stmt = $db->prepare("SELECT student_id FROM users WHERE student_id LIKE 'STU%' ORDER BY CAST(SUBSTRING(student_id, 4) AS UNSIGNED) DESC LIMIT 1");
+    $stmt->execute();
+    $last_id = $stmt->fetchColumn();
+
+    if ($last_id) {
+        // Extract the number part and increment
+        $number = (int)substr($last_id, 3);
+        $next_number = $number + 1;
+    } else {
+        // Start from 1 if no Stu IDs exist
+        $next_number = 1;
+    }
+
+    // Generate the new ID with Stu prefix and 3-digit number
+    $student_id = 'STU' . str_pad($next_number, 3, '0', STR_PAD_LEFT);
+
+    // Double-check if this ID already exists (shouldn't happen with sequential generation)
+    $stmt = $db->prepare("SELECT COUNT(*) FROM users WHERE student_id = ?");
+    $stmt->execute([$student_id]);
+    $exists = $stmt->fetchColumn();
+
+    if ($exists > 0) {
+        // If it exists (rare case), try incrementing once more
+        $next_number++;
+        $student_id = 'STU' . str_pad($next_number, 3, '0', STR_PAD_LEFT);
+    }
+
+    return $student_id;
+}
+
 // Log admin actions
 function logAdminAction($action, $details = '') {
     $db = getDBConnection();

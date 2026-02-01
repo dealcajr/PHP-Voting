@@ -21,11 +21,10 @@ if (!$election || !$election['is_open']) {
     exit();
 }
 
-// Check if election token is required and provided
+// Check if election token is required and validated in session
 if (!empty($election['election_token'])) {
-    $provided_token = $_GET['token'] ?? $_POST['election_token'] ?? '';
-    if ($provided_token !== $election['election_token']) {
-        echo "<div class='alert alert-danger'>Invalid or missing election access token.</div>";
+    if (!isset($_SESSION['election_token_validated']) || $_SESSION['election_token_validated'] !== true) {
+        header('Location: token_input.php');
         exit();
     }
 }

@@ -35,16 +35,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_csv'])) {
                         $section = trim($data[4]);
                         $password = trim($data[5]);
 
-                        if (!empty($student_id) && !empty($password)) {
-                            // Check if student already exists
-                            $stmt = $db->prepare("SELECT id FROM users WHERE student_id = ?");
-                            $stmt->execute([$student_id]);
+                        if (!empty($password)) {
+                            // If student_id is empty or not provided, auto-generate it
+                            if (empty($student_id)) {
+                                $student_id = generateStudentID();
+                            } else {
+                                // Check if provided student_id already exists
+                                $stmt = $db->prepare("SELECT id FROM users WHERE student_id = ?");
+                                $stmt->execute([$student_id]);
+                                if ($stmt->fetch()) {
+                                    $skipped++;
+                                    continue; // Skip this record
+                                }
+                            }
+
+                            // Check if student already exists (by name/grade/section to avoid duplicates)
+                            $stmt = $db->prepare("SELECT id FROM users WHERE first_name = ? AND last_name = ? AND grade = ? AND section = ?");
+                            $stmt->execute([$first_name, $last_name, $grade, $section]);
                             $existing = $stmt->fetch();
 
                             if (!$existing) {
                                 $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                                $stmt = $db->prepare("INSERT INTO users (student_id, password_hash, role, first_name, last_name, grade, section) VALUES (?, ?, 'voter', ?, ?, ?, ?)");
-                                $stmt->execute([$student_id, $password_hash, $first_name, $last_name, $grade, $section]);
+                                $voter_id_card = 'VOTER-' . strtoupper(substr(md5(uniqid()), 0, 8));
+                                $stmt = $db->prepare("INSERT INTO users (student_id, password_hash, role, first_name, last_name, grade, section, voter_id_card, is_active) VALUES (?, ?, 'voter', ?, ?, ?, ?, ?, 1)");
+                                $stmt->execute([$student_id, $password_hash, $first_name, $last_name, $grade, $section, $voter_id_card]);
                                 $imported++;
                             } else {
                                 $skipped++;
@@ -79,7 +93,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $student_id = $_POST['student_id'] ?? 0;
 
         try {
-            if ($action === 'activate') {
+            if ($action === 'approve') {
+                $db->prepare("UPDATE users SET is_active = 1 WHERE id = ? AND role = 'voter'")->execute([$student_id]);
+                logAdminAction('student_approved', "Approved student registration ID: $student_id");
+                $message = '<div class="alert alert-success">Student registration approved successfully.</div>';
+            } elseif ($action === 'activate') {
                 $db->prepare("UPDATE users SET is_active = 1 WHERE id = ? AND role = 'voter'")->execute([$student_id]);
                 logAdminAction('student_activated', "Activated student ID: $student_id");
                 $message = '<div class="alert alert-success">Student activated successfully.</div>';
@@ -103,8 +121,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-// Get students
-$students = $db->query("SELECT * FROM users WHERE role = 'voter' ORDER BY grade, section, last_name, first_name")->fetchAll();
+// Get filter parameters
+$grade_filter = $_GET['grade'] ?? '';
+$section_filter = $_GET['section'] ?? '';
+
+// Build query with filters
+$query = "SELECT * FROM users WHERE role = 'voter'";
+$params = [];
+
+if (!empty($grade_filter)) {
+    $query .= " AND grade = ?";
+    $params[] = $grade_filter;
+}
+
+if (!empty($section_filter)) {
+    $query .= " AND section = ?";
+    $params[] = $section_filter;
+}
+
+$query .= " ORDER BY grade, section, last_name, first_name";
+
+$stmt = $db->prepare($query);
+$stmt->execute($params);
+$students = $stmt->fetchAll();
+
+// Get unique grades and sections for filter dropdowns
+$grades = $db->query("SELECT DISTINCT grade FROM users WHERE role = 'voter' ORDER BY grade")->fetchAll(PDO::FETCH_COLUMN);
+$sections = $db->query("SELECT DISTINCT section FROM users WHERE role = 'voter' ORDER BY section")->fetchAll(PDO::FETCH_COLUMN);
 
 include '../includes/admin_header.php';
 include '../includes/admin_sidebar.php';
@@ -121,10 +164,64 @@ include '../includes/admin_sidebar.php';
 
     <?php echo $message; ?>
 
+    <!-- Filter Form -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5><i class="fas fa-filter me-2"></i>Filter Students</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="grade" class="form-label">Grade Level</label>
+                    <select name="grade" id="grade" class="form-select">
+                        <option value="">All Grades</option>
+                        <?php foreach ($grades as $grade): ?>
+                            <option value="<?php echo htmlspecialchars($grade); ?>" <?php echo $grade_filter === $grade ? 'selected' : ''; ?>>
+                                Grade <?php echo htmlspecialchars($grade); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="section" class="form-label">Section</label>
+                    <select name="section" id="section" class="form-select">
+                        <option value="">All Sections</option>
+                        <?php foreach ($sections as $section): ?>
+                            <option value="<?php echo htmlspecialchars($section); ?>" <?php echo $section_filter === $section ? 'selected' : ''; ?>>
+                                Section <?php echo htmlspecialchars($section); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-1"></i>Filter
+                    </button>
+                    <?php if (!empty($grade_filter) || !empty($section_filter)): ?>
+                        <a href="students.php" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Clear Filters
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Students Table -->
     <div class="card">
         <div class="card-header">
-            <h4>Registered Students (<?php echo count($students); ?>)</h4>
+            <h4>Registered Students (<?php echo count($students); ?>)
+                <?php if (!empty($grade_filter) || !empty($section_filter)): ?>
+                    <small class="text-muted">
+                        <?php
+                        $filters = [];
+                        if (!empty($grade_filter)) $filters[] = "Grade $grade_filter";
+                        if (!empty($section_filter)) $filters[] = "Section $section_filter";
+                        echo '- Filtered by: ' . implode(', ', $filters);
+                        ?>
+                    </small>
+                <?php endif; ?>
+            </h4>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -146,9 +243,11 @@ include '../includes/admin_sidebar.php';
                                 <td><?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></td>
                                 <td><?php echo htmlspecialchars('Grade ' . $student['grade'] . '-' . $student['section']); ?></td>
                                 <td>
-                                    <span class="badge <?php echo $student['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
-                                        <?php echo $student['is_active'] ? 'Active' : 'Inactive'; ?>
-                                    </span>
+                                    <?php if ($student['is_active']): ?>
+                                        <span class="badge bg-success">Active</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-warning">Pending Approval</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($student['voter_id_card'] ?? 'Not Generated'); ?></td>
                                 <td>

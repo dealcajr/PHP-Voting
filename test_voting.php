@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/config.php';
+require_once 'includes/config.php';
 
 echo "Testing SSLG Voting System Voting Process...\n\n";
 

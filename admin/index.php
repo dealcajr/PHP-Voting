@@ -9,35 +9,24 @@ if (isset($_POST['logout'])) {
     exit;
 }
 
-// Check if voting is active
-$tokens_file = '../election_tokens.json';
-$voting_active = false;
-$voting_closed = false;
-if (file_exists($tokens_file)) {
-    $tokens = json_decode(file_get_contents($tokens_file), true);
-    if (isset($tokens['enabled']) && $tokens['enabled'] === true) {
-        $voting_active = true;
-    } elseif (isset($tokens['enabled']) && $tokens['enabled'] === false) {
-        $voting_closed = true;
-    }
-}
+// Check election status from database
+$db = getDBConnection();
+$election_status = $db->query("SELECT is_open FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$voting_active = $election_status['is_open'] == 1;
+$voting_closed = $election_status['is_open'] == 0;
 
-// Load school settings
-$settings_file = '../school_settings.json';
-$default_settings = [
-    'school_name' => 'Sample High School',
-    'school_id' => 'SHS-2026',
-    'principal' => 'Dr. Juan Santos',
-    'logo_path' => '../logo.png',
+// Load school settings from database
+$db = getDBConnection();
+$school_info = $db->query("SELECT * FROM school_info LIMIT 1")->fetch();
+$election_settings = $db->query("SELECT logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+
+$settings = [
+    'school_name' => $school_info['school_name'] ?? 'Sample High School',
+    'school_id' => $school_info['school_id_no'] ?? 'SHS-2026',
+    'principal' => $school_info['principal_name'] ?? 'Dr. Juan Santos',
+    'logo_path' => $election_settings['logo_path'] ?? '../logo.png',
     'school_classification' => 'Small'
 ];
-
-if (file_exists($settings_file)) {
-    $settings = json_decode(file_get_contents($settings_file), true);
-    $settings = array_merge($default_settings, $settings);
-} else {
-    $settings = $default_settings;
-}
 
 // Determine system title based on school level
 $school_level = $settings['school_level'] ?? 'Junior High School';

@@ -6,6 +6,7 @@
         <a class="nav-link" href="print_ids.php">Print Voter IDs</a>
         <a class="nav-link" href="candidates.php">View Candidates</a>
         <a class="nav-link" href="election.php">Manage Election</a>
+        <a class="nav-link" href="theme.php">Theme Customization</a>
     </nav>
 </aside>
 <main class="admin-main">

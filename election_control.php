@@ -58,8 +58,26 @@ $school_name = $stmt->fetchColumn();
 
     <div class="container">
         <div class="row g-4 justify-content-center">
+            <!-- Vote Now Card -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card option-card border-primary h-100" onclick="window.location.href='vote_login.php'">
+                    <div class="card-body text-center p-5">
+                        <div class="card-icon text-primary">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+                        <h3 class="card-title text-primary fw-bold">Vote Now</h3>
+                        <p class="card-text text-muted">
+                            Enter your Student ID to cast your vote in the current election.
+                        </p>
+                        <div class="mt-4">
+                            <span class="badge bg-primary">Quick Vote</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Student Login Card -->
-            <div class="col-lg-5 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="card option-card border-success h-100" onclick="window.location.href='login.php'">
                     <div class="card-body text-center p-5">
                         <div class="card-icon text-success">
@@ -67,17 +85,17 @@ $school_name = $stmt->fetchColumn();
                         </div>
                         <h3 class="card-title text-success fw-bold">Student Login</h3>
                         <p class="card-text text-muted">
-                            Sign in with your Student ID to access the voting system and cast your votes.
+                            Sign in with your Student ID and password to access your account and view results.
                         </p>
                         <div class="mt-4">
-                            <span class="badge bg-success">Vote Now</span>
+                            <span class="badge bg-success">Full Access</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Student Registration Card -->
-            <div class="col-lg-5 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="card option-card border-info h-100" onclick="window.location.href='student_register.php'">
                     <div class="card-body text-center p-5">
                         <div class="card-icon text-info">

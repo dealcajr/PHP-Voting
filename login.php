@@ -48,12 +48,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if ($user['role'] === 'admin') {
                             header('Location: admin/index.php');
                         } else {
-                            // For voters, check if election token is required
+                        // For voters, check if election token is required
                             $db = getDBConnection();
                             $election_stmt = $db->query("SELECT election_token FROM election_settings WHERE is_open = 1 ORDER BY id DESC LIMIT 1");
                             $election = $election_stmt->fetch();
                             if ($election && !empty($election['election_token'])) {
-                                header('Location: token_input.php');
+                                // Check if user has already validated token
+                                $user_stmt = $db->prepare("SELECT token_validated FROM users WHERE id = ?");
+                                $user_stmt->execute([$user['id']]);
+                                $user_data = $user_stmt->fetch();
+                                if ($user_data && $user_data['token_validated'] == 1) {
+                                    $_SESSION['election_token_validated'] = true;
+                                    header('Location: vote.php');
+                                } else {
+                                    header('Location: token_input.php');
+                                }
                             } else {
                                 header('Location: vote.php');
                             }
@@ -97,8 +106,8 @@ $access_denied = isset($_GET['access_denied']) ? 'Access denied. Please log in.'
                 <p class="lead">SSLG Voting System</p>
             </div>
             <div class="login-form">
-                <h2 class="text-center mb-4">Sign In</h2>
-                <p class="text-center text-muted mb-4">Use your Student ID to continue.</p>
+                <h2 class="text-center mb-4">Account Login</h2>
+                <p class="text-center text-muted mb-4">Sign in with your Student ID and password for full account access.</p>
 
                 <?php if ($login_error): ?>
                     <div class="alert alert-danger"><?php echo $login_error; ?></div>
@@ -125,9 +134,7 @@ $access_denied = isset($_GET['access_denied']) ? 'Access denied. Please log in.'
                     </div>
                 </form>
 
-                <div class="text-center mt-3">
-                    <p>Don't have an account? <a href="student_register.php">Register here</a></p>
-                </div>
+
             </div>
         </div>
     </div>

@@ -46,6 +46,30 @@ if ($show_results) {
         $results[$candidate['position']][] = $candidate;
     }
 
+    // Check for close elections (margin of 5 votes or less)
+    $is_close = false;
+    foreach ($results as $position => $candidates) {
+        if (count($candidates) >= 2) {
+            // Sort by vote_count desc
+            usort($candidates, function($a, $b) {
+                return $b['vote_count'] - $a['vote_count'];
+            });
+            $top1 = $candidates[0]['vote_count'];
+            $top2 = $candidates[1]['vote_count'];
+            $margin = $top1 - $top2;
+            if ($margin <= 5) {
+                $is_close = true;
+                break; // No need to check further if any position is close
+            }
+        }
+    }
+
+    if ($is_close) {
+        // Redirect to close election page
+        header('Location: close_election.php');
+        exit();
+    }
+
     // Get total votes cast
     $total_votes_cast = $db->query("SELECT COUNT(DISTINCT voter_id) FROM votes")->fetchColumn();
 }

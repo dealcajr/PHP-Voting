@@ -11,10 +11,15 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Get school name
+// Get school name and theme settings
 $db = getDBConnection();
 $stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
 $school_name = $stmt->fetchColumn();
+
+// Get theme settings
+$election = $db->query("SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$theme_color = $election['theme_color'] ?? '#343a40';
+$logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,32 +55,17 @@ $school_name = $stmt->fetchColumn();
 <body>
     <div class="welcome-section">
         <div class="container text-center">
+            <?php if ($logo_path): ?>
+                <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="Election Logo" class="mb-3" style="max-height: 100px;">
+            <?php endif; ?>
             <h1 class="display-4 fw-bold"><?php echo htmlspecialchars($school_name ?? APP_NAME); ?></h1>
-            <p class="lead">Student Supreme Legislative Government Voting System</p>
+            <p class="lead">Student Supreme Learner Government Voting System</p>
             <p class="mt-3">Choose your access option below</p>
         </div>
     </div>
 
     <div class="container">
         <div class="row g-4 justify-content-center">
-            <!-- Admin Login Card -->
-            <div class="col-lg-5 col-md-6">
-                <div class="card option-card border-primary h-100" onclick="window.location.href='admin_login.php'">
-                    <div class="card-body text-center p-5">
-                        <div class="card-icon text-primary">
-                            <i class="bi bi-shield-lock"></i>
-                        </div>
-                        <h3 class="card-title text-primary fw-bold">Admin Login</h3>
-                        <p class="card-text text-muted">
-                            Access administrative controls to manage elections, students, and system settings.
-                        </p>
-                        <div class="mt-4">
-                            <span class="badge bg-primary">Administrator Access</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Election Control Card -->
             <div class="col-lg-5 col-md-6">
                 <div class="card option-card border-success h-100" onclick="window.location.href='election_control.php'">
@@ -92,7 +82,6 @@ $school_name = $stmt->fetchColumn();
                     </div>
                 </div>
             </div>
-        </div>
 
         <div class="row mt-5">
             <div class="col-12 text-center">

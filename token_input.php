@@ -47,8 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_token'])) {
         } elseif ($provided_token !== $election['election_token']) {
             $message = '<div class="alert alert-danger">Invalid election access token. Please check with your election administrator.</div>';
         } else {
-            // Token is valid, set session flag
+            // Token is valid, set session flag and update database
             $_SESSION['election_token_validated'] = true;
+            $user_id = $_SESSION['user_id'];
+            $stmt = $db->prepare("UPDATE users SET token_validated = 1 WHERE id = ?");
+            $stmt->execute([$user_id]);
             header('Location: vote.php');
             exit();
         }

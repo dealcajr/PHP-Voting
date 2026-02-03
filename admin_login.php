@@ -17,36 +17,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $login_error = 'Invalid request. Please try again.';
     } else {
-        $student_id = sanitizeInput($_POST['student_id'] ?? '');
         $password = $_POST['password'] ?? '';
 
-        if (empty($student_id) || empty($password)) {
-            $login_error = 'Please enter both Student ID and Password.';
+        if (empty($password)) {
+            $login_error = 'Please enter the administrator password.';
         } else {
             try {
                 $db = getDBConnection();
-                $stmt = $db->prepare("SELECT id, password_hash, role, is_active, first_name FROM users WHERE student_id = ? AND role = 'admin'");
-                $stmt->execute([$student_id]);
+                $stmt = $db->prepare("SELECT id, password_hash, role, is_active, first_name, student_id FROM users WHERE role = 'admin' AND is_active = 1 LIMIT 1");
+                $stmt->execute();
                 $user = $stmt->fetch();
 
                 if ($user && password_verify($password, $user['password_hash'])) {
-                    if (!$user['is_active']) {
-                        $login_error = 'Your account is deactivated. Please contact system administrator.';
-                    } else {
-                        // Successful login
-                        $_SESSION['user_id'] = $user['id'];
-                        $_SESSION['student_id'] = $student_id;
-                        $_SESSION['role'] = $user['role'];
-                        $_SESSION['first_name'] = $user['first_name'];
+                    // Successful login
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['student_id'] = $user['student_id'];
+                    $_SESSION['role'] = $user['role'];
+                    $_SESSION['first_name'] = $user['first_name'];
 
-                        // Log admin login
-                        logAdminAction('admin_login', 'Administrator logged in');
+                    // Log admin login
+                    logAdminAction('admin_login', 'Administrator logged in');
 
-                        header('Location: admin/index.php');
-                        exit();
-                    }
+                    header('Location: admin/index.php');
+                    exit();
                 } else {
-                    $login_error = 'Invalid administrator credentials.';
+                    $login_error = 'Invalid administrator password.';
                 }
             } catch (PDOException $e) {
                 $login_error = 'Database error. Please try again later.';
@@ -87,10 +82,6 @@ $school_name = $stmt->fetchColumn();
 
                 <form method="POST" action="">
                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                    <div class="mb-3">
-                        <label for="student_id" class="form-label">Administrator ID</label>
-                        <input type="text" class="form-control form-control-lg" id="student_id" name="student_id" required autofocus placeholder="Enter admin ID">
-                    </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control form-control-lg" id="password" name="password" required placeholder="Enter password">

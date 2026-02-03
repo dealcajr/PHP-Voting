@@ -22,7 +22,8 @@ body {
 }
 
 .admin-sidebar {
-    width: 250px;
+    width: auto;
+    min-height: fit-content;
     background-color: #343a40;
     padding: 20px;
 }

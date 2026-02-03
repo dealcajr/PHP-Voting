@@ -5,6 +5,7 @@ body {
 
 .admin-wrapper {
     display: flex;
+    min-height: 100vh;
 }
 
 .admin-header {

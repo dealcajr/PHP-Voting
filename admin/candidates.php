@@ -100,7 +100,7 @@ $candidates = $db->query("SELECT * FROM candidates ORDER BY position, name")->fe
 
 // Get positions for dropdown
 $positions = $db->query("SELECT DISTINCT position FROM candidates WHERE position IS NOT NULL AND position != '' ORDER BY position")->fetchAll(PDO::FETCH_COLUMN);
-$default_positions = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'PRO'];
+$default_positions = ['President', 'Junior High School Vice President', 'Senior High School Vice President', 'Secretary', 'Treasurer', 'Auditor', 'Public Information Officer', 'Grade 8 Representative', 'Grade 9 Representative', 'Grade 10 Representative', 'Grade 11 Representative', 'Grade 12 Representative'];
 $positions = array_unique(array_merge($default_positions, $positions));
 
 include '../includes/admin_header.php';

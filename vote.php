@@ -51,6 +51,8 @@ if ($has_voted_all && $positions) {
     exit();
 }
 
+$multi_vote_positions = ['Grade 8 Representative', 'Grade 9 Representative', 'Grade 10 Representative', 'Grade 11 Representative', 'Grade 12 Representative'];
+
 // Handle vote submission
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
@@ -69,39 +71,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
                 $db->beginTransaction();
                 $votes_cast = 0;
 
-                foreach ($votes as $position => $candidate_id) {
-                    // Check if user already voted for this position
-                    $stmt = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ?");
-                    $stmt->execute([$user_id, $position]);
-                    $existing_vote = $stmt->fetch();
+                foreach ($votes as $position => $candidate_data) {
+                    // Handle multi-vote positions
+                    if (is_array($candidate_data)) {
+                        if (in_array($position, $multi_vote_positions) && count($candidate_data) > 2) {
+                            $message = "<div class='alert alert-danger'>You can vote for a maximum of 2 candidates for $position.</div>";
+                            $db->rollBack();
+                            break;
+                        }
+                        
+                        foreach($candidate_data as $candidate_id) {
+                            // Check if user already voted for this position with this candidate
+                            $stmt = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ? AND candidate_id = ?");
+                            $stmt->execute([$user_id, $position, $candidate_id]);
+                            $existing_vote = $stmt->fetch();
 
-                    if (!$existing_vote) {
-                        // Get candidate info
-                        $stmt = $db->prepare("SELECT * FROM candidates WHERE id = ? AND is_active = 1");
-                        $stmt->execute([$candidate_id]);
-                        $candidate = $stmt->fetch();
+                            if (!$existing_vote) {
+                                $stmt = $db->prepare("SELECT * FROM candidates WHERE id = ? AND is_active = 1");
+                                $stmt->execute([$candidate_id]);
+                                $candidate = $stmt->fetch();
 
-                        if ($candidate) {
-                            // Create vote hash for integrity
-                            $vote_data = $user_id . $candidate_id . $position . time();
-                            $vote_hash = hash('sha256', $vote_data);
+                                if ($candidate) {
+                                    $vote_data = $user_id . $candidate_id . $position . time();
+                                    $vote_hash = hash('sha256', $vote_data);
 
-                            // Insert vote
-                            $stmt = $db->prepare("INSERT INTO votes (voter_id, candidate_id, position, vote_hash) VALUES (?, ?, ?, ?)");
-                            $stmt->execute([$user_id, $candidate_id, $position, $vote_hash]);
-                            $votes_cast++;
+                                    $stmt = $db->prepare("INSERT INTO votes (voter_id, candidate_id, position, vote_hash) VALUES (?, ?, ?, ?)");
+                                    $stmt->execute([$user_id, $candidate_id, $position, $vote_hash]);
+                                    $votes_cast++;
+                                }
+                            }
+                        }
+                    } else { // Single vote
+                        $candidate_id = $candidate_data;
+                        $stmt = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ?");
+                        $stmt->execute([$user_id, $position]);
+                        $existing_vote = $stmt->fetch();
+
+                        if (!$existing_vote) {
+                            $stmt = $db->prepare("SELECT * FROM candidates WHERE id = ? AND is_active = 1");
+                            $stmt->execute([$candidate_id]);
+                            $candidate = $stmt->fetch();
+
+                            if ($candidate) {
+                                $vote_data = $user_id . $candidate_id . $position . time();
+                                $vote_hash = hash('sha256', $vote_data);
+
+                                $stmt = $db->prepare("INSERT INTO votes (voter_id, candidate_id, position, vote_hash) VALUES (?, ?, ?, ?)");
+                                $stmt->execute([$user_id, $candidate_id, $position, $vote_hash]);
+                                $votes_cast++;
+                            }
                         }
                     }
                 }
-
-                $db->commit();
-
-                if ($votes_cast > 0) {
-                    $message = "<div class='alert alert-success'>Your vote has been recorded successfully! You voted for $votes_cast position(s).</div>";
-                    // Clear the votes array to prevent re-submission
-                    $votes = [];
-                } else {
-                    $message = '<div class="alert alert-info">You have already voted for all selected positions.</div>';
+                if(!empty($message)) {
+                    $db->commit();
+                    if ($votes_cast > 0) {
+                        $message = "<div class='alert alert-success'>Your vote has been recorded successfully! You voted for $votes_cast position(s).</div>";
+                        $votes = [];
+                    } else {
+                        $message = '<div class="alert alert-info">You have already voted for all selected positions.</div>';
+                    }
                 }
 
             } catch (PDOException $e) {
@@ -176,12 +205,15 @@ if ($positions) {
                                 <div class="card mb-4">
                                     <div class="card-header">
                                         <h4><?php echo htmlspecialchars($position); ?></h4>
+                                        <?php if (in_array($position, $multi_vote_positions)): ?>
+                                            <small class="text-muted">You can vote for up to 2 candidates.</small>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
                                             <?php foreach ($candidates as $candidate): ?>
                                                 <div class="col-md-6 mb-3">
-                                                    <div class="card h-100 candidate-card <?php echo (isset($votes[$position]) && $votes[$position] == $candidate['id']) ? 'border-primary' : ''; ?>">
+                                                    <div class="card h-100 candidate-card">
                                                         <div class="card-body">
                                                             <?php if ($candidate['photo']): ?>
                                                                 <img src="<?php echo htmlspecialchars($candidate['photo']); ?>" class="img-fluid rounded mb-2" alt="Candidate Photo" style="max-height: 150px;">
@@ -193,7 +225,11 @@ if ($positions) {
                                                                 <p class="mb-2"><small><strong>Platform:</strong> <?php echo htmlspecialchars(substr($candidate['manifesto'], 0, 100)); ?><?php echo strlen($candidate['manifesto']) > 100 ? '...' : ''; ?></small></p>
                                                             <?php endif; ?>
                                                             <div class="form-check">
-                                                                <input class="form-check-input" type="radio" name="votes[<?php echo htmlspecialchars($position); ?>]" value="<?php echo $candidate['id']; ?>" id="candidate_<?php echo $candidate['id']; ?>" required>
+                                                                <?php if (in_array($position, $multi_vote_positions)): ?>
+                                                                    <input class="form-check-input" type="checkbox" name="votes[<?php echo htmlspecialchars($position); ?>][]" value="<?php echo $candidate['id']; ?>" id="candidate_<?php echo $candidate['id']; ?>">
+                                                                <?php else: ?>
+                                                                    <input class="form-check-input" type="radio" name="votes[<?php echo htmlspecialchars($position); ?>]" value="<?php echo $candidate['id']; ?>" id="candidate_<?php echo $candidate['id']; ?>" required>
+                                                                <?php endif; ?>
                                                                 <label class="form-check-label" for="candidate_<?php echo $candidate['id']; ?>">
                                                                     Select <?php echo htmlspecialchars($candidate['name']); ?>
                                                                 </label>
@@ -281,6 +317,7 @@ if ($positions) {
                     <div class="card-body">
                         <ul class="list-unstyled">
                             <li class="mb-2">✓ One vote per position</li>
+                            <li class="mb-2">✓ For Representatives, you can vote for up to 2 candidates.</li>
                             <li class="mb-2">✓ Votes are anonymous</li>
                             <li class="mb-2">✓ Cannot change vote once submitted</li>
                             <li class="mb-2">✓ Must confirm vote before submission</li>
@@ -295,15 +332,30 @@ if ($positions) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Highlight selected candidate cards
-        document.querySelectorAll('input[type="radio"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                // Remove highlight from all cards in this position
+        document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => {
+            input.addEventListener('change', function() {
                 const position = this.name.match(/votes\[(.*?)\]/)[1];
-                document.querySelectorAll(`input[name="votes[${position}]"]`).forEach(r => {
-                    r.closest('.candidate-card').classList.remove('border-primary');
-                });
-                // Add highlight to selected card
-                this.closest('.candidate-card').classList.add('border-primary');
+                if (this.type === 'radio') {
+                    document.querySelectorAll(`input[name="votes[${position}]"]`).forEach(r => {
+                        r.closest('.candidate-card').classList.remove('border-primary');
+                    });
+                }
+
+                if (this.checked) {
+                    this.closest('.candidate-card').classList.add('border-primary');
+                } else {
+                    this.closest('.candidate-card').classList.remove('border-primary');
+                }
+
+                // For checkboxes, limit selection to 2
+                if (this.type === 'checkbox') {
+                    const checkboxes = document.querySelectorAll(`input[name="votes[${position}][]"]:checked`);
+                    if (checkboxes.length > 2) {
+                        this.checked = false;
+                        this.closest('.candidate-card').classList.remove('border-primary');
+                        alert('You can only select up to 2 candidates for this position.');
+                    }
+                }
             });
         });
     </script>

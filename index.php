@@ -17,7 +17,7 @@ $stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
 $school_name = $stmt->fetchColumn();
 
 // Get theme settings
-$election = $db->query("SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$election = $db->query( "SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
 $theme_color = $election['theme_color'] ?? '#343a40';
 $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
 ?>

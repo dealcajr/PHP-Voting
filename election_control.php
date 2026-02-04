@@ -119,7 +119,7 @@ $school_name = $stmt->fetchColumn();
                     <strong>Ready to Vote:</strong> Make sure you have your Student ID and are registered to participate in elections.
                 </div>
                 <a href="index.php" class="btn btn-outline-secondary mt-3">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Main Menu
+                    <i class="bi bi-arrow-left me-1"></i>Back to Main Menu
                 </a>
             </div>
         </div>

@@ -1,5 +1,5 @@
 <?php
-require_once '../includes/config.php';
+require_once __DIR__ . '/../includes/config.php';
 requireRole('admin');
 
 $db = getDBConnection();
@@ -23,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $stmt = $db->query("SELECT * FROM school_info LIMIT 1");
 $settings = $stmt->fetch();
 
-include '../includes/admin_header.php';
-include '../includes/admin_sidebar.php';
+include __DIR__ . '/../includes/admin_header.php';
+include __DIR__ . '/../includes/admin_sidebar.php';
 ?>
 
 <div class="admin-content">
@@ -56,4 +56,4 @@ include '../includes/admin_sidebar.php';
     </form>
 </div>
 
-<?php include '../includes/admin_footer.php'; ?>
+<?php include __DIR__ . '/../includes/admin_footer.php'; ?>

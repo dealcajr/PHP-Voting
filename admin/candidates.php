@@ -1,5 +1,5 @@
 <?php
-require_once '../includes/config.php';
+require_once __DIR__ . '/../includes/config.php';
 requireRole('admin');
 
 $db = getDBConnection();
@@ -283,4 +283,4 @@ include '../includes/admin_sidebar.php';
     });
 </script>
 
-<?php include '../includes/admin_footer.php'; ?>
+<?php include __DIR__ . '/../includes/admin_footer.php'; ?>

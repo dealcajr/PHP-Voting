@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo APP_NAME; ?> - Admin</title>
+    <title>BDBSHS SSLG Voting System - Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     <link href="../assets/css/style.css" rel="stylesheet">
@@ -238,10 +238,8 @@
 <body>
     <header class="admin-header">
         <div class="container-fluid">
-            <a class="navbar-brand" href="index.php"><?php echo APP_NAME; ?> Admin</a>
-            <div class="d-flex">
-                <a href="../logout.php" class="btn btn-outline-light">Logout</a>
-            </div>
+            <a class="navbar-brand" href="index.php"><?php echo SCHOOL_NAME; ?> <h6>SSLG Voting System - Admin</h6></a>
         </div>
     </header>
-    <div class="admin-wrapper">
+    <div class="admin-wrapper"> 
+</body>

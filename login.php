@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $db = getDBConnection();
-                $stmt = $db->prepare("SELECT id, password_hash, role, is_active, first_name FROM users WHERE student_id = ?");
+                $stmt = $db->prepare("SELECT id, password_hash, role, is_active, first_name FROM users WHERE LOWER(student_id) = LOWER(?)");
                 $stmt->execute([$student_id]);
                 $user = $stmt->fetch();
 

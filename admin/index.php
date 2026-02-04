@@ -1,5 +1,5 @@
 <?php
-require_once '../includes/config.php';
+require_once __DIR__ . '/../includes/config.php';
 requireRole('admin');
 
 // Handle logout
@@ -24,7 +24,7 @@ $settings = [
     'school_name' => $school_info['school_name'] ?? 'Sample High School',
     'school_id' => $school_info['school_id_no'] ?? 'SHS-2026',
     'principal' => $school_info['principal_name'] ?? 'Dr. Juan Santos',
-    'logo_path' => $election_settings['logo_path'] ?? '../logo.png',
+    'logo_path' => $election_settings['logo_path'] ?? '../assets/images/logo_1770105233.png',
     'school_classification' => 'Small'
 ];
 

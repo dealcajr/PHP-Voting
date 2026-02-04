@@ -1,5 +1,5 @@
 <?php
-require_once '../includes/config.php';
+require_once __DIR__ . '/../includes/config.php';
 requireRole('admin');
 
 $db = getDBConnection();
@@ -43,7 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = '<div class="alert alert-success">Election token cleared successfully.</div>';
 
             } elseif ($action === 'open_election') {
-                $stmt = $db->prepare("UPDATE election_settings SET is_open = 1, start_date = NOW() WHERE id = ?");
                 $stmt->execute([$election['id']]);
 
                 logAdminAction('election_opened', 'Election opened');

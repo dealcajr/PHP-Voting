@@ -1,5 +1,5 @@
-# TODO: Fix Voting Mode Token Validation
+# TODO: Add Logout Button to Admin Page
 
-## Steps to Complete
-- [x] Update vote.php to use session-based token validation instead of GET/POST parameters
-- [x] Ensure proper redirection to token_input.php when token is required but not validated
+- [x] Edit includes/admin_sidebar.php: Add logout link after existing nav links
+- [x] Edit assets/css/admin_style.css: Update .admin-sidebar styles for bottom positioning
+- [ ] Test the admin page to ensure logout button appears at bottom left and functions correctly

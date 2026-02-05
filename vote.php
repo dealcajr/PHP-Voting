@@ -71,15 +71,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
                 $db->beginTransaction();
                 $votes_cast = 0;
 
+                $has_error = false;
                 foreach ($votes as $position => $candidate_data) {
                     // Handle multi-vote positions
                     if (is_array($candidate_data)) {
                         if (in_array($position, $multi_vote_positions) && count($candidate_data) > 2) {
                             $message = "<div class='alert alert-danger'>You can vote for a maximum of 2 candidates for $position.</div>";
-                            $db->rollBack();
+                            $has_error = true;
                             break;
                         }
-                        
+
                         foreach($candidate_data as $candidate_id) {
                             // Check if user already voted for this position with this candidate
                             $stmt = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ? AND candidate_id = ?");
@@ -123,7 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
                         }
                     }
                 }
-                if(!empty($message)) {
+
+                if (!$has_error) {
                     $db->commit();
                     if ($votes_cast > 0) {
                         $message = "<div class='alert alert-success'>Your vote has been recorded successfully! You voted for $votes_cast position(s).</div>";
@@ -131,6 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
                     } else {
                         $message = '<div class="alert alert-info">You have already voted for all selected positions.</div>';
                     }
+                } else {
+                    $db->rollBack();
                 }
 
             } catch (PDOException $e) {

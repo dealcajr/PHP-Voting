@@ -26,14 +26,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $student_id = $generated_student_id; // Use the auto-generated ID
         $first_name = sanitizeInput($_POST['first_name'] ?? '');
         $last_name = sanitizeInput($_POST['last_name'] ?? '');
+        $lrn = sanitizeInput($_POST['lrn'] ?? '');
         $grade = sanitizeInput($_POST['grade'] ?? '');
         $section = sanitizeInput($_POST['section'] ?? '');
         $password = $_POST['password'] ?? '';
         $confirm_password = $_POST['confirm_password'] ?? '';
 
-        if (empty($student_id) || empty($first_name) || empty($last_name) || empty($grade) || empty($section) || empty($password)) {
+        if (empty($student_id) || empty($first_name) || empty($last_name) || empty($lrn) || empty($grade) || empty($section) || empty($password)) {
             $message = '<div class="alert alert-danger">All fields are required.</div>';
+        } elseif (!preg_match('/^\d{12}$/', $lrn)) {
+            $message = '<div class="alert alert-danger">LRN must be exactly 12 digits.</div>';
         } elseif ($password !== $confirm_password) {
+
             $message = '<div class="alert alert-danger">Passwords do not match.</div>';
         } elseif (strlen($password) < PASSWORD_MIN_LENGTH) {
             $message = '<div class="alert alert-danger">Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters long.</div>';
@@ -50,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $password_hash = password_hash($password, PASSWORD_DEFAULT);
                     $voter_id_card = 'VOTER-' . strtoupper(substr(md5(uniqid()), 0, 8));
 
-                    $stmt = $db->prepare("INSERT INTO users (student_id, password_hash, role, first_name, last_name, grade, section, voter_id_card) VALUES (?, ?, 'voter', ?, ?, ?, ?, ?)");
-                    $stmt->execute([$student_id, $password_hash, $first_name, $last_name, $grade, $section, $voter_id_card]);
+                    $stmt = $db->prepare("INSERT INTO users (student_id, lrn, password_hash, role, first_name, last_name, grade, section, voter_id_card) VALUES (?, ?, ?, 'voter', ?, ?, ?, ?, ?)");
+                    $stmt->execute([$student_id, $lrn, $password_hash, $first_name, $last_name, $grade, $section, $voter_id_card]);
 
                     logAdminAction('student_registered', "Registered new student: $student_id");
                     $message = '<div class="alert alert-success">Student registered successfully. Student ID: ' . $student_id . ', Voter ID: ' . $voter_id_card . '</div>';
@@ -97,6 +101,12 @@ $school_name = $stmt->fetchColumn();
                                 <label for="last_name" class="form-label">Last Name</label>
                                 <input type="text" class="form-control" id="last_name" name="last_name" required>
                             </div>
+                            <div class="mb-3">
+                                <label for="lrn" class="form-label">LRN (Learner Reference Number)</label>
+                                <input type="text" class="form-control" id="lrn" name="lrn" maxlength="12" pattern="\d{12}" title="LRN must be exactly 12 digits" required>
+                                <small class="text-muted">Enter exactly 12 digits</small>
+                            </div>
+
                             <div class="mb-3">
                                 <label for="grade" class="form-label">Grade</label>
                                 <input type="text" class="form-control" id="grade" name="grade" required>

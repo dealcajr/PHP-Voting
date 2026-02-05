@@ -13,8 +13,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $school_id_no = sanitizeInput($_POST['school_id_no']);
     $principal_name = sanitizeInput($_POST['principal_name']);
 
-    $stmt = $db->prepare("UPDATE school_info SET school_name = ?, school_address = ?, school_id_no = ?, principal_name = ?");
-    $stmt->execute([$school_name, $school_address, $school_id_no, $principal_name]);
+    // Handle logo upload
+    $logo_path = $settings['logo_path'] ?? null;
+    if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = '../assets/images/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+
+        $file_extension = strtolower(pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION));
+        if (!in_array($file_extension, ALLOWED_EXTENSIONS)) {
+            die('Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.');
+        } elseif ($_FILES['logo']['size'] > MAX_FILE_SIZE) {
+            die('File size too large. Maximum size is 2MB.');
+        } else {
+            $filename = 'school_logo_' . time() . '.' . $file_extension;
+            $filepath = $upload_dir . $filename;
+
+            if (move_uploaded_file($_FILES['logo']['tmp_name'], $filepath)) {
+                // Delete old logo if exists
+                if ($logo_path && file_exists('../' . $logo_path)) {
+                    unlink('../' . $logo_path);
+                }
+                $logo_path = 'assets/images/' . $filename;
+            } else {
+                die('Failed to upload logo.');
+            }
+        }
+    }
+
+    $stmt = $db->prepare("UPDATE school_info SET school_name = ?, school_address = ?, school_id_no = ?, principal_name = ?, logo_path = ?");
+    $stmt->execute([$school_name, $school_address, $school_id_no, $principal_name, $logo_path]);
 
     header('Location: school.php?success=1');
     exit();

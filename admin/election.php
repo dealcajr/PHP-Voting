@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $start_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
                 $end_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
-                $stmt = $db->prepare("UPDATE election_settings SET election_name = ?, start_date = ?, end_date = ?, updated_at = NOW() WHERE id = ?");
+                $stmt = $db->prepare("UPDATE election_settings SET election_name = ?, start_date = ?, end_date = ?, updated_at = datetime('now') WHERE id = ?");
                 $stmt->execute([$election_name, $start_date, $end_date, $election['id']]);
 
                 logAdminAction('election_settings_updated', 'Updated election settings');
@@ -43,13 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = '<div class="alert alert-success">Election token cleared successfully.</div>';
 
             } elseif ($action === 'open_election') {
+                $stmt = $db->prepare("UPDATE election_settings SET is_open = 1 WHERE id = ?");
                 $stmt->execute([$election['id']]);
 
                 logAdminAction('election_opened', 'Election opened');
                 $message = '<div class="alert alert-success">Election opened successfully.</div>';
 
             } elseif ($action === 'close_election') {
-                $stmt = $db->prepare("UPDATE election_settings SET is_open = 0, end_date = NOW() WHERE id = ?");
+                $stmt = $db->prepare("UPDATE election_settings SET is_open = 0, end_date = datetime('now') WHERE id = ?");
                 $stmt->execute([$election['id']]);
 
                 logAdminAction('election_closed', 'Election closed');

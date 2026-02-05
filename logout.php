@@ -12,6 +12,6 @@ session_destroy();
 
 // Redirect to login page
 $auto = isset($_GET['auto']) ? '?auto=1' : '';
-header('Location: login.php' . $auto);
+header('Location: vote_login.php' . $auto);
 exit();
 ?>

@@ -1,5 +1,6 @@
-# TODO: Add Logout Button to Admin Page
-
-- [x] Edit includes/admin_sidebar.php: Add logout link after existing nav links
-- [x] Edit assets/css/admin_style.css: Update .admin-sidebar styles for bottom positioning
-- [ ] Test the admin page to ensure logout button appears at bottom left and functions correctly
+- [ ] Add `lrn` column (VARCHAR(20), nullable) to the `users` table in `sql/schema.sql`
+- [ ] Create `add_lrn_column.php` migration script to add `lrn` column to existing database
+=======
+## Tasks
+- [x] Add `lrn` column (VARCHAR(20), nullable) to the `users` table in `sql/schema.sql`
+- [x] Create `add_lrn_column.php` migration script to add `lrn` column to existing database

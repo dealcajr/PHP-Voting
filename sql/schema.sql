@@ -123,6 +123,7 @@ INSERT INTO `school_info` (`id`, `school_name`, `school_address`, `school_logo`,
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `student_id` varchar(20) NOT NULL,
+  `lrn` varchar(20) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `role` enum('voter','admin') NOT NULL DEFAULT 'voter',
   `first_name` varchar(100) DEFAULT NULL,

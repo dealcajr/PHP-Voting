@@ -5,86 +5,91 @@ requireRole('admin');
 $db = getDBConnection();
 $message = '';
 
-// Handle CSV upload
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_csv'])) {
+// Handle CSV import
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_csv'])) {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $message = '<div class="alert alert-danger">Invalid request.</div>';
-    } else {
-        if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
-            $file = $_FILES['csv_file']['tmp_name'];
-
-            try {
-                $handle = fopen($file, 'r');
-                if ($handle === false) {
-                    throw new Exception('Could not open CSV file.');
-                }
-
-                $db->beginTransaction();
+    } elseif (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['csv_file']['tmp_name'];
+        $handle = fopen($file, 'r');
+        
+        if ($handle !== false) {
+            $headers = fgetcsv($handle);
+            $expected_headers = ['student_id', 'lrn', 'first_name', 'last_name', 'grade', 'section', 'password'];
+            
+            if ($headers !== $expected_headers) {
+                $message = '<div class="alert alert-danger">Invalid CSV format. Expected columns: ' . implode(', ', $expected_headers) . '</div>';
+            } else {
                 $imported = 0;
-                $skipped = 0;
-
-                // Skip header row
-                fgetcsv($handle);
-
+                $errors = [];
+                
                 while (($data = fgetcsv($handle)) !== false) {
-                    if (count($data) >= 6) {
-                        $student_id = trim($data[0]);
-                        $first_name = trim($data[1]);
-                        $last_name = trim($data[2]);
-                        $grade = trim($data[3]);
-                        $section = trim($data[4]);
-                        $password = trim($data[5]);
-
-                        if (!empty($password)) {
-                            // If student_id is empty or not provided, auto-generate it
-                            if (empty($student_id)) {
-                                $student_id = generateStudentID();
-                            } else {
-                                // Check if provided student_id already exists
-                                $stmt = $db->prepare("SELECT id FROM users WHERE student_id = ?");
-                                $stmt->execute([$student_id]);
-                                if ($stmt->fetch()) {
-                                    $skipped++;
-                                    continue; // Skip this record
-                                }
-                            }
-
-                            // Check if student already exists (by name/grade/section to avoid duplicates)
-                            $stmt = $db->prepare("SELECT id FROM users WHERE first_name = ? AND last_name = ? AND grade = ? AND section = ?");
-                            $stmt->execute([$first_name, $last_name, $grade, $section]);
-                            $existing = $stmt->fetch();
-
-                            if (!$existing) {
-                                $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                                $voter_id_card = 'VOTER-' . strtoupper(substr(md5(uniqid()), 0, 8));
-                                $stmt = $db->prepare("INSERT INTO users (student_id, password_hash, role, first_name, last_name, grade, section, voter_id_card, is_active) VALUES (?, ?, 'voter', ?, ?, ?, ?, ?, 1)");
-                                $stmt->execute([$student_id, $password_hash, $first_name, $last_name, $grade, $section, $voter_id_card]);
-                                $imported++;
-                            } else {
-                                $skipped++;
-                            }
+                    if (count($data) !== 7) {
+                        $errors[] = "Invalid row data";
+                        continue;
+                    }
+                    
+                    list($student_id, $lrn, $first_name, $last_name, $grade, $section, $password) = $data;
+                    
+                    // Skip empty rows
+                    if (empty($student_id) || empty($lrn)) {
+                        continue;
+                    }
+                    
+                    // Validate LRN is exactly 12 digits
+                    if (!preg_match('/^\d{12}$/', $lrn)) {
+                        $errors[] = "Invalid LRN for $student_id: LRN must be exactly 12 digits";
+                        continue;
+                    }
+                    
+                    try {
+                        // Check if student_id already exists
+                        $stmt = $db->prepare("SELECT id FROM users WHERE student_id = ?");
+                        $stmt->execute([$student_id]);
+                        if ($stmt->fetch()) {
+                            $errors[] = "Student ID $student_id already exists";
+                            continue;
                         }
+                        
+                        // Check if LRN already exists
+                        $stmt = $db->prepare("SELECT id FROM users WHERE lrn = ?");
+                        $stmt->execute([$lrn]);
+                        if ($stmt->fetch()) {
+                            $errors[] = "LRN $lrn already exists";
+                            continue;
+                        }
+                        
+                        $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                        $voter_id_card = 'VOTER-' . strtoupper(substr(md5(uniqid()), 0, 8));
+                        
+                        $stmt = $db->prepare("INSERT INTO users (student_id, lrn, password_hash, role, first_name, last_name, grade, section, voter_id_card, is_active) VALUES (?, ?, ?, 'voter', ?, ?, ?, ?, ?, 1)");
+                        $stmt->execute([$student_id, $lrn, $password_hash, $first_name, $last_name, $grade, $section, $voter_id_card]);
+                        $imported++;
+                    } catch (PDOException $e) {
+                        $errors[] = "Error importing $student_id: " . $e->getMessage();
                     }
                 }
-
-                $db->commit();
+                
                 fclose($handle);
-
-                logAdminAction('students_imported', "Imported $imported students, skipped $skipped duplicates");
-                $message = "<div class='alert alert-success'>Successfully imported $imported students. Skipped $skipped duplicates.</div>";
-
-            } catch (Exception $e) {
-                $db->rollBack();
-                if (isset($handle)) fclose($handle);
-                $message = '<div class="alert alert-danger">Import failed: ' . $e->getMessage() . '</div>';
+                
+                if ($imported > 0) {
+                    logAdminAction('students_imported', "Imported $imported students via CSV");
+                    $message = '<div class="alert alert-success">Successfully imported ' . $imported . ' students.</div>';
+                }
+                
+                if (!empty($errors)) {
+                    $message .= '<div class="alert alert-warning"><strong>Errors:</strong><br>' . implode('<br>', array_slice($errors, 0, 10)) . (count($errors) > 10 ? '<br>... and ' . (count($errors) - 10) . ' more errors' : '') . '</div>';
+                }
             }
         } else {
-            $message = '<div class="alert alert-danger">Please select a valid CSV file.</div>';
+            $message = '<div class="alert alert-danger">Failed to read CSV file.</div>';
         }
+    } else {
+        $message = '<div class="alert alert-danger">Please upload a valid CSV file.</div>';
     }
 }
 
-// Handle individual student actions
+// Handle student actions (activate/deactivate/delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $message = '<div class="alert alert-danger">Invalid request.</div>';
@@ -93,27 +98,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $student_id = $_POST['student_id'] ?? 0;
 
         try {
-            if ($action === 'approve') {
-                $db->prepare("UPDATE users SET is_active = 1 WHERE id = ? AND role = 'voter'")->execute([$student_id]);
-                logAdminAction('student_approved', "Approved student registration ID: $student_id");
-                $message = '<div class="alert alert-success">Student registration approved successfully.</div>';
-            } elseif ($action === 'activate') {
-                $db->prepare("UPDATE users SET is_active = 1 WHERE id = ? AND role = 'voter'")->execute([$student_id]);
+            if ($action === 'activate') {
+                $db->prepare("UPDATE users SET is_active = 1 WHERE id = ?")->execute([$student_id]);
                 logAdminAction('student_activated', "Activated student ID: $student_id");
                 $message = '<div class="alert alert-success">Student activated successfully.</div>';
             } elseif ($action === 'deactivate') {
-                $db->prepare("UPDATE users SET is_active = 0 WHERE id = ? AND role = 'voter'")->execute([$student_id]);
+                $db->prepare("UPDATE users SET is_active = 0 WHERE id = ?")->execute([$student_id]);
                 logAdminAction('student_deactivated', "Deactivated student ID: $student_id");
                 $message = '<div class="alert alert-success">Student deactivated successfully.</div>';
             } elseif ($action === 'delete') {
-                $db->prepare("DELETE FROM users WHERE id = ? AND role = 'voter'")->execute([$student_id]);
-                logAdminAction('student_deleted', "Deleted student ID: $student_id");
-                $message = '<div class="alert alert-success">Student deleted successfully.</div>';
-            } elseif ($action === 'generate_id') {
-                $voter_id_card = 'VOTER-' . strtoupper(substr(md5(uniqid()), 0, 8));
-                $db->prepare("UPDATE users SET voter_id_card = ? WHERE id = ? AND role = 'voter'")->execute([$voter_id_card, $student_id]);
-                logAdminAction('voter_id_generated', "Generated voter ID for student ID: $student_id");
-                $message = '<div class="alert alert-success">Voter ID generated successfully.</div>';
+                // Don't allow deleting admins
+                $stmt = $db->prepare("SELECT role FROM users WHERE id = ?");
+                $stmt->execute([$student_id]);
+                $role = $stmt->fetchColumn();
+                
+                if ($role === 'admin') {
+                    $message = '<div class="alert alert-danger">Cannot delete admin users.</div>';
+                } else {
+                    $db->prepare("DELETE FROM users WHERE id = ?")->execute([$student_id]);
+                    logAdminAction('student_deleted', "Deleted student ID: $student_id");
+                    $message = '<div class="alert alert-success">Student deleted successfully.</div>';
+                }
             }
         } catch (PDOException $e) {
             $message = '<div class="alert alert-danger">Database error: ' . $e->getMessage() . '</div>';
@@ -121,33 +126,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-// Get filter parameters
-$grade_filter = $_GET['grade'] ?? '';
-$section_filter = $_GET['section'] ?? '';
+// Get all students (excluding admins)
+$students = $db->query("SELECT * FROM users WHERE role = 'voter' ORDER BY grade, section, last_name, first_name")->fetchAll();
 
-// Build query with filters
-$query = "SELECT * FROM users WHERE role = 'voter'";
-$params = [];
-
-if (!empty($grade_filter)) {
-    $query .= " AND grade = ?";
-    $params[] = $grade_filter;
-}
-
-if (!empty($section_filter)) {
-    $query .= " AND section = ?";
-    $params[] = $section_filter;
-}
-
-$query .= " ORDER BY grade, section, last_name, first_name";
-
-$stmt = $db->prepare($query);
-$stmt->execute($params);
-$students = $stmt->fetchAll();
-
-// Get unique grades and sections for filter dropdowns
-$grades = $db->query("SELECT DISTINCT grade FROM users WHERE role = 'voter' ORDER BY grade")->fetchAll(PDO::FETCH_COLUMN);
-$sections = $db->query("SELECT DISTINCT section FROM users WHERE role = 'voter' ORDER BY section")->fetchAll(PDO::FETCH_COLUMN);
+// Get statistics
+$total_students = count($students);
+$active_students = count(array_filter($students, fn($s) => $s['is_active']));
+$inactive_students = $total_students - $active_students;
 
 include '../includes/admin_header.php';
 include '../includes/admin_sidebar.php';
@@ -156,72 +141,45 @@ include '../includes/admin_sidebar.php';
 <div class="admin-content">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Student Management</h1>
-        <div>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">Upload Students (CSV)</button>
-            <a href="print_ids.php" target="_blank" class="btn btn-secondary">Print Voter IDs</a>
-        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="fas fa-upload"></i> Import CSV
+        </button>
     </div>
 
     <?php echo $message; ?>
 
-    <!-- Filter Form -->
-    <div class="card mb-3">
-        <div class="card-header">
-            <h5><i class="fas fa-filter me-2"></i>Filter Students</h5>
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h4><?php echo $total_students; ?></h4>
+                    <p class="mb-0">Total Students</p>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="GET" class="row g-3">
-                <div class="col-md-4">
-                    <label for="grade" class="form-label">Grade Level</label>
-                    <select name="grade" id="grade" class="form-select">
-                        <option value="">All Grades</option>
-                        <?php foreach ($grades as $grade): ?>
-                            <option value="<?php echo htmlspecialchars($grade); ?>" <?php echo $grade_filter === $grade ? 'selected' : ''; ?>>
-                                Grade <?php echo htmlspecialchars($grade); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h4><?php echo $active_students; ?></h4>
+                    <p class="mb-0">Active Students</p>
                 </div>
-                <div class="col-md-4">
-                    <label for="section" class="form-label">Section</label>
-                    <select name="section" id="section" class="form-select">
-                        <option value="">All Sections</option>
-                        <?php foreach ($sections as $section): ?>
-                            <option value="<?php echo htmlspecialchars($section); ?>" <?php echo $section_filter === $section ? 'selected' : ''; ?>>
-                                Section <?php echo htmlspecialchars($section); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h4><?php echo $inactive_students; ?></h4>
+                    <p class="mb-0">Inactive Students</p>
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="fas fa-search me-1"></i>Filter
-                    </button>
-                    <?php if (!empty($grade_filter) || !empty($section_filter)): ?>
-                        <a href="students.php" class="btn btn-outline-secondary">
-                            <i class="fas fa-times me-1"></i>Clear Filters
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <!-- Students Table -->
     <div class="card">
         <div class="card-header">
-            <h4>Registered Students (<?php echo count($students); ?>)
-                <?php if (!empty($grade_filter) || !empty($section_filter)): ?>
-                    <small class="text-muted">
-                        <?php
-                        $filters = [];
-                        if (!empty($grade_filter)) $filters[] = "Grade $grade_filter";
-                        if (!empty($section_filter)) $filters[] = "Section $section_filter";
-                        echo '- Filtered by: ' . implode(', ', $filters);
-                        ?>
-                    </small>
-                <?php endif; ?>
-            </h4>
+            <h4>Students (<?php echo $total_students; ?>)</h4>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -229,10 +187,11 @@ include '../includes/admin_sidebar.php';
                     <thead>
                         <tr>
                             <th>Student ID</th>
+                            <th>LRN</th>
                             <th>Name</th>
                             <th>Grade & Section</th>
+                            <th>Voter ID</th>
                             <th>Status</th>
-                            <th>Voter ID Card</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -240,16 +199,15 @@ include '../includes/admin_sidebar.php';
                         <?php foreach ($students as $student): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($student['student_id']); ?></td>
-                                <td><?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></td>
+                                <td><?php echo htmlspecialchars($student['lrn'] ?? ''); ?></td>
+                                <td><?php echo htmlspecialchars($student['last_name'] . ', ' . $student['first_name']); ?></td>
                                 <td><?php echo htmlspecialchars('Grade ' . $student['grade'] . '-' . $student['section']); ?></td>
+                                <td><code><?php echo htmlspecialchars($student['voter_id_card']); ?></code></td>
                                 <td>
-                                    <?php if ($student['is_active']): ?>
-                                        <span class="badge bg-success">Active</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-warning">Pending Approval</span>
-                                    <?php endif; ?>
+                                    <span class="badge <?php echo $student['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
+                                        <?php echo $student['is_active'] ? 'Active' : 'Inactive'; ?>
+                                    </span>
                                 </td>
-                                <td><?php echo htmlspecialchars($student['voter_id_card'] ?? 'Not Generated'); ?></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <form method="POST" class="d-inline">
@@ -260,15 +218,7 @@ include '../includes/admin_sidebar.php';
                                                 <?php echo $student['is_active'] ? 'Deactivate' : 'Activate'; ?>
                                             </button>
                                         </form>
-                                        <?php if (empty($student['voter_id_card'])): ?>
-                                            <form method="POST" class="d-inline">
-                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                                <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
-                                                <input type="hidden" name="action" value="generate_id">
-                                                <button type="submit" class="btn btn-outline-info btn-sm">Generate ID</button>
-                                            </form>
-                                        <?php endif; ?>
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this student?')">
+                                        <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this student? This action cannot be undone.')">
                                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                             <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
                                             <input type="hidden" name="action" value="delete">
@@ -285,37 +235,45 @@ include '../includes/admin_sidebar.php';
     </div>
 </div>
 
-<!-- Upload CSV Modal -->
-<div class="modal fade" id="uploadModal" tabindex="-1">
+<!-- Import CSV Modal -->
+<div class="modal fade" id="importModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Upload Students from CSV</h5>
+                <h5 class="modal-title">Import Students from CSV</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>Upload a CSV file with the following columns:</p>
-                <code>student_id, first_name, last_name, grade, section, password</code>
-                <br><small class="text-muted">Note: Existing students will be skipped.</small>
-
-                <div class="alert alert-info">
-                    <strong>CSV Format Example:</strong><br>
-                    <code>STU001,John,Doe,12,A,password123</code><br>
-                    <code>STU002,Jane,Smith,12,B,password456</code>
-                </div>
-
-                <form method="POST" enctype="multipart/form-data" class="mt-3">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                    <input type="hidden" name="upload_csv" value="1">
-                    <div class="mb-3">
-                        <label for="csv_file" class="form-label">Select CSV File</label>
+                    <input type="hidden" name="import_csv" value="1">
+                    
+                    <p>Upload a CSV file with the following columns:</p>
+                    <code>student_id, lrn, first_name, last_name, grade, section, password</code>
+                    <p class="text-muted small">Note: LRN must be exactly 12 digits</p>
+                    
+                    <div class="mb-3 mt-3">
+                        <label for="csv_file" class="form-label">CSV File</label>
                         <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+                        <small class="text-muted">Maximum file size: 2MB</small>
                     </div>
-                    <button type="submit" class="btn btn-primary">Upload & Import</button>
-                </form>
-            </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Sample CSV format:</strong><br>
+                        <code>
+                        student_id,lrn,first_name,last_name,grade,section,password<br>
+                        STU001,123456789012,Juan,Dela Cruz,10,A,password123<br>
+                        STU002,123456789013,Maria,Santos,10,B,password123
+                        </code>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Import Students</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<?php include '../includes/admin_footer.php'; ?>
+<?php include __DIR__ . '/../includes/admin_footer.php'; ?>

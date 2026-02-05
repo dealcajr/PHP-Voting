@@ -11,54 +11,39 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Handle login form submission
+// Handle LRN form submission
 $login_error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $login_error = 'Invalid request. Please try again.';
     } else {
-        $student_id = sanitizeInput($_POST['student_id'] ?? '');
+        $lrn = sanitizeInput($_POST['lrn'] ?? '');
 
-        if (empty($student_id)) {
-            $login_error = 'Please enter your Student ID.';
+        if (empty($lrn)) {
+            $login_error = 'Please enter your LRN.';
+        } elseif (!preg_match('/^\d{12}$/', $lrn)) {
+            $login_error = 'LRN must be exactly 12 digits.';
         } else {
             try {
                 $db = getDBConnection();
-                $stmt = $db->prepare("SELECT id, role, is_active, first_name FROM users WHERE student_id = ?");
-                $stmt->execute([$student_id]);
+                $stmt = $db->prepare("SELECT id, role, is_active, first_name, last_name, student_id FROM users WHERE lrn = ? AND role = 'voter'");
+                $stmt->execute([$lrn]);
                 $user = $stmt->fetch();
 
                 if ($user) {
                     if (!$user['is_active']) {
                         $login_error = 'Your account is deactivated. Please contact an administrator.';
                     } else {
-                        // Successful login for voting
-                        $_SESSION['user_id'] = $user['id'];
-                        $_SESSION['student_id'] = $student_id;
-                        $_SESSION['role'] = $user['role'];
-                        $_SESSION['first_name'] = $user['first_name'];
-
-                        // For voters, check if election token is required
-                        $election_stmt = $db->query("SELECT election_token FROM election_settings WHERE is_open = 1 ORDER BY id DESC LIMIT 1");
-                        $election = $election_stmt->fetch();
-                        if ($election && !empty($election['election_token'])) {
-                            // Check if user has already validated token
-                            $user_stmt = $db->prepare("SELECT token_validated FROM users WHERE id = ?");
-                            $user_stmt->execute([$user['id']]);
-                            $user_data = $user_stmt->fetch();
-                            if ($user_data && $user_data['token_validated'] == 1) {
-                                $_SESSION['election_token_validated'] = true;
-                                header('Location: vote.php');
-                            } else {
-                                header('Location: token_input.php');
-                            }
-                        } else {
-                            header('Location: vote.php');
-                        }
+                        // Store LRN in session and redirect to password page
+                        $_SESSION['voting_lrn'] = $lrn;
+                        $_SESSION['voting_user_id'] = $user['id'];
+                        $_SESSION['voting_student_id'] = $user['student_id'];
+                        $_SESSION['voting_name'] = $user['first_name'] . ' ' . $user['last_name'];
+                        header('Location: vote_password.php');
                         exit();
                     }
                 } else {
-                    $login_error = 'Invalid Student ID. Please check your Student ID and try again.';
+                    $login_error = 'Invalid LRN. Please check your LRN and try again.';
                 }
             } catch (PDOException $e) {
                 $login_error = 'Database error. Please try again later.';
@@ -91,7 +76,7 @@ $school_name = $stmt->fetchColumn();
             </div>
             <div class="login-form">
                 <h2 class="text-center mb-4">Vote Now</h2>
-                <p class="text-center text-muted mb-4">Enter your Student ID to cast your vote.</p>
+                <p class="text-center text-muted mb-4">Enter your LRN to cast your vote.</p>
 
                 <?php if ($login_error): ?>
                     <div class="alert alert-danger"><?php echo $login_error; ?></div>
@@ -100,8 +85,9 @@ $school_name = $stmt->fetchColumn();
                 <form method="POST" action="">
                     <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <div class="mb-3">
-                        <label for="student_id" class="form-label">Student ID</label>
-                        <input type="text" class="form-control form-control-lg" id="student_id" name="student_id" required autofocus placeholder="Enter your Student ID">
+                        <label for="lrn" class="form-label">LRN (Learner Reference Number)</label>
+                        <input type="text" class="form-control form-control-lg" id="lrn" name="lrn" required autofocus placeholder="Enter your 12-digit LRN" maxlength="12" pattern="\d{12}">
+                        <small class="text-muted">Enter exactly 12 digits</small>
                     </div>
                     <div class="d-grid mt-4">
                         <button type="submit" class="btn btn-primary btn-lg">Continue to Vote</button>

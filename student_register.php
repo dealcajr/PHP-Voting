@@ -19,13 +19,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $first_name = sanitizeInput($_POST['first_name'] ?? '');
         $last_name = sanitizeInput($_POST['last_name'] ?? '');
+        $lrn = sanitizeInput($_POST['lrn'] ?? '');
         $grade = sanitizeInput($_POST['grade'] ?? '');
         $section = sanitizeInput($_POST['section'] ?? '');
         $track = sanitizeInput($_POST['track'] ?? '');
 
-        if (empty($first_name) || empty($last_name) || empty($grade) || empty($section)) {
-            $message = '<div class="alert alert-danger">Name, grade, and section are required.</div>';
+        if (empty($first_name) || empty($last_name) || empty($lrn) || empty($grade) || empty($section)) {
+            $message = '<div class="alert alert-danger">Name, LRN, grade, and section are required.</div>';
+        } elseif (!preg_match('/^\d{12}$/', $lrn)) {
+            $message = '<div class="alert alert-danger">LRN must be exactly 12 digits.</div>';
         } elseif (($grade == '11' || $grade == '12') && empty($track)) {
+
             $message = '<div class="alert alert-danger">Track is required for Senior High School students (Grades 11-12).</div>';
         } else {
             try {
@@ -39,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $password_hash = password_hash($default_password, PASSWORD_DEFAULT);
                 $voter_id_card = 'VOTER-' . strtoupper(substr(md5(uniqid()), 0, 8));
 
-                $stmt = $db->prepare("INSERT INTO users (student_id, password_hash, role, first_name, last_name, grade, section, track, voter_id_card, is_active) VALUES (?, ?, 'voter', ?, ?, ?, ?, ?, ?, 0)");
-                $stmt->execute([$student_id, $password_hash, $first_name, $last_name, $grade, $section, $track, $voter_id_card]);
+                $stmt = $db->prepare("INSERT INTO users (student_id, lrn, password_hash, role, first_name, last_name, grade, section, track, voter_id_card, is_active) VALUES (?, ?, ?, 'voter', ?, ?, ?, ?, ?, ?, 0)");
+                $stmt->execute([$student_id, $lrn, $password_hash, $first_name, $last_name, $grade, $section, $track, $voter_id_card]);
 
                 $message = '<div class="alert alert-success">Registration successful! Your Student ID is: <strong>' . $student_id . '</strong>. Your default password is: <strong>' . $default_password . '</strong>. Your account is pending approval by an administrator. You will receive your Voter ID Card once approved. Please check back later.</div>';
             } catch (Exception $e) {
@@ -93,6 +97,12 @@ $school_name = $stmt->fetchColumn();
                         <label for="last_name" class="form-label">Last Name</label>
                         <input type="text" class="form-control form-control-lg" id="last_name" name="last_name" required>
                     </div>
+                    <div class="mb-3">
+                        <label for="lrn" class="form-label">LRN (Learner Reference Number)</label>
+                        <input type="text" class="form-control form-control-lg" id="lrn" name="lrn" maxlength="12" pattern="\d{12}" title="LRN must be exactly 12 digits" required>
+                        <small class="text-muted">Enter exactly 12 digits</small>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="grade" class="form-label">Grade</label>

@@ -11,10 +11,12 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Get school name and theme settings
+// Get school name and logo
 $db = getDBConnection();
-$stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
-$school_name = $stmt->fetchColumn();
+$stmt = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");
+$school_info = $stmt->fetch();
+$school_name = $school_info['school_name'] ?? APP_NAME;
+$school_logo_path = $school_info['logo_path'] ?? null;
 
 // Get theme settings
 $election = $db->query( "SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
@@ -30,6 +32,9 @@ $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
     <style>
+        :root {
+            --theme-color: <?php echo htmlspecialchars($theme_color); ?>;
+        }
         .option-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             cursor: pointer;
@@ -40,7 +45,7 @@ $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
         .welcome-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--theme-color) 0%, #764ba2 100%);
             color: white;
             padding: 60px 0;
             margin-bottom: 50px;
@@ -55,8 +60,8 @@ $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
 <body>
     <div class="welcome-section">
         <div class="container text-center">
-            <?php if ($logo_path): ?>
-                <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="Election Logo" class="mb-3" style="max-height: 100px;">
+            <?php if ($school_logo_path): ?>
+                <img src="<?php echo htmlspecialchars($school_logo_path); ?>" alt="School Logo" class="mb-3" style="max-height: 100px;">
             <?php endif; ?>
             <h1 class="display-4 fw-bold"><?php echo htmlspecialchars($school_name ?? APP_NAME); ?></h1>
             <p class="lead">Student Supreme Learner Government Voting System</p>

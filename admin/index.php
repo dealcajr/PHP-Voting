@@ -18,13 +18,14 @@ $voting_closed = $election_status['is_open'] == 0;
 // Load school settings from database
 $db = getDBConnection();
 $school_info = $db->query("SELECT * FROM school_info LIMIT 1")->fetch();
-$election_settings = $db->query("SELECT logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$election_settings = $db->query("SELECT logo_path, theme_color FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
 
 $settings = [
     'school_name' => $school_info['school_name'] ?? 'Sample High School',
     'school_id' => $school_info['school_id_no'] ?? 'SHS-2026',
     'principal' => $school_info['principal_name'] ?? 'Dr. Juan Santos',
     'logo_path' => $election_settings['logo_path'] ?? '../assets/images/logo_1770105233.png',
+    'theme_color' => $election_settings['theme_color'] ?? '#343a40',
     'school_classification' => 'Small'
 ];
 
@@ -49,6 +50,9 @@ include '../includes/admin_sidebar.php';
 ?>
 
 <style>
+:root {
+    --theme-color: <?php echo htmlspecialchars($settings['theme_color']); ?>;
+}
 .dashboard-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -90,7 +94,7 @@ include '../includes/admin_sidebar.php';
     left: 0;
     width: 4px;
     height: 100%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, var(--theme-color), #764ba2);
 }
 
 .stat-card .stat-icon {

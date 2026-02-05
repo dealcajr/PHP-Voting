@@ -9,6 +9,8 @@ body {
 }
 
 .admin-header {
+    width: auto;
+    height: 100px;
     background-color: #343a40;
     color: #fff;
     padding: 10px 20px;
@@ -23,7 +25,7 @@ body {
 
 .admin-sidebar {
     width: auto;
-    height: 100%;
+    height: auto;
     background-color: #343a40;
     padding: 20px;
     display: flex;

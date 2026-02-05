@@ -75,25 +75,7 @@ $school_name = $stmt->fetchColumn();
                     </div>
                 </div>
             </div>
-
-            <!-- Student Login Card -->
-            <div class="col-lg-4 col-md-6">
-                <div class="card option-card border-success h-100" onclick="window.location.href='login.php'">
-                    <div class="card-body text-center p-5">
-                        <div class="card-icon text-success">
-                            <i class="bi bi-box-arrow-in-right"></i>
-                        </div>
-                        <h3 class="card-title text-success fw-bold">Student Login</h3>
-                        <p class="card-text text-muted">
-                            Sign in with your Student ID and password to access your account and view results.
-                        </p>
-                        <div class="mt-4">
-                            <span class="badge bg-success">Full Access</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            
             <!-- Student Registration Card -->
             <div class="col-lg-4 col-md-6">
                 <div class="card option-card border-info h-100" onclick="window.location.href='student_register.php'">

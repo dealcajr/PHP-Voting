@@ -3,7 +3,7 @@ require_once 'includes/config.php';
 
 // Check if user is logged in and is a voter
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'voter') {
-    header('Location: login.php');
+    header('Location: vote_login.php');
     exit();
 }
 
@@ -17,7 +17,7 @@ $election = $election_stmt->fetch();
 
 // Check if election is open
 if (!$election || !$election['is_open']) {
-    echo "<div class='alert alert-info'>The election is currently closed. Please check back later.</div>";
+    header('Location: election_closed.php');
     exit();
 }
 

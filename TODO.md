@@ -1,6 +1,6 @@
-- [ ] Add `lrn` column (VARCHAR(20), nullable) to the `users` table in `sql/schema.sql`
-- [ ] Create `add_lrn_column.php` migration script to add `lrn` column to existing database
-=======
-## Tasks
-- [x] Add `lrn` column (VARCHAR(20), nullable) to the `users` table in `sql/schema.sql`
-- [x] Create `add_lrn_column.php` migration script to add `lrn` column to existing database
+# TODO for Fixing vote.php Election Closed Redirect
+
+- [x] Create `election_closed.php` page with user-friendly message and navigation options
+- [x] Edit `vote.php` to redirect to `election_closed.php` when election is closed
+- [ ] Test the redirect functionality
+- [ ] Ensure the new page integrates well with the site's design

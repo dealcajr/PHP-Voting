@@ -3,7 +3,7 @@ require_once 'includes/config.php';
 
 // Check if user is logged in and is a voter
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'voter') {
-    header('Location: login.php');
+    header('Location: vote_login.php');
     exit();
 }
 

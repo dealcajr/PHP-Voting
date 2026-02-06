@@ -193,6 +193,9 @@ include '../includes/admin_sidebar.php';
                     $total_voters = $db->query("SELECT COUNT(*) FROM users WHERE role = 'voter' AND is_active = 1")->fetchColumn();
                     $total_votes = $db->query("SELECT COUNT(DISTINCT voter_id) FROM votes")->fetchColumn();
                     $total_candidates = $db->query("SELECT COUNT(*) FROM candidates WHERE is_active = 1")->fetchColumn();
+
+                    // Get commissioners data
+                    $commissioners = $db->query("SELECT commission_type, name, token FROM commissioners WHERE is_active = 1 ORDER BY commission_type")->fetchAll(PDO::FETCH_ASSOC);
                     ?>
                     <div class="row text-center">
                         <div class="col-12 mb-2">
@@ -214,6 +217,38 @@ include '../includes/admin_sidebar.php';
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Commissioners -->
+            <div class="card mt-4" id="commissionersCard">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Commission Tokens</h4>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="printCommissioners()">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">These tokens are required for election control operations.</p>
+                    <?php if (!empty($commissioners)): ?>
+                        <?php foreach ($commissioners as $commissioner): ?>
+                            <div class="mb-3 p-3 border rounded">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong><?php echo htmlspecialchars($commissioner['name']); ?></strong><br>
+                                        <small class="text-muted"><?php echo ucfirst($commissioner['commission_type']); ?> Commissioner</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <code class="bg-light px-2 py-1 rounded"><?php echo htmlspecialchars($commissioner['token']); ?></code>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="alert alert-warning">
+                            No commissioners found in the database.
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

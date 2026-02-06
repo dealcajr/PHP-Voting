@@ -72,7 +72,7 @@ $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
     <div class="container">
         <div class="row g-4 justify-content-center">
             <!-- Election Control Card -->
-            <div class="col-lg-5 col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="card option-card border-success h-100" onclick="window.location.href='election_control.php'">
                     <div class="card-body text-center p-5">
                         <div class="card-icon text-primary">
@@ -84,9 +84,55 @@ $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
                         </p>
                         <div class="mt-4">
                             <span class="badge bg-success">Student Access</span>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Voting Control Card -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card option-card border-warning h-100" onclick="window.location.href='voting_control.php'">
+                    <div class="card-body text-center p-5">
+                        <div class="card-icon text-warning">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <h3 class="card-title text-warning fw-bold">Voting Control</h3>
+                        <p class="card-text text-muted mb-3">
+                            Administrative access for election management.
+                        </p>
+                        <div class="alert alert-warning text-start small">
+                            <strong>Voting Control Instructions:</strong><br>
+                            Use this section to start or close voting<br>
+                            You need all 3 tokens from the commissions:<br>
+                            • Chief Commissioner Token<br>
+                            • Commission on Screening and Validation Token<br>
+                            • Commission of Electoral Board Token
+                        </div>
+                        <div class="mt-4">
+                            <span class="badge bg-warning text-dark">Admin Access</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Login Card -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card option-card border-danger h-100" onclick="window.location.href='admin_login.php'">
+                    <div class="card-body text-center p-5">
+                        <div class="card-icon text-danger">
+                            <i class="bi bi-shield-lock"></i>
+                        </div>
+                        <h3 class="card-title text-danger fw-bold">Admin Login</h3>
+                        <p class="card-text text-muted">
+                            System administration and management access.
+                        </p>
+                        <div class="mt-4">
+                            <span class="badge bg-danger">Administrator</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="row mt-5">
             <div class="col-12 text-center">

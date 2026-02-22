@@ -1,6 +1,12 @@
 <?php
 require_once 'includes/config.php';
 
+// Check if election is open
+if (!isElectionOpen()) {
+    header('Location: election_not_open.php');
+    exit();
+}
+
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'admin') {
@@ -57,6 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $db = getDBConnection();
 $stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
 $school_name = $stmt->fetchColumn();
+
+// Get theme settings
+$election = $db->query("SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$theme_color = $election['theme_color'] ?? '#343a40';
+$logo_path = $election['logo_path'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -66,11 +77,40 @@ $school_name = $stmt->fetchColumn();
     <title><?php echo $school_name ?? APP_NAME; ?> - Vote Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
-</head>
+    <style>
+        :root {
+            --theme-color: <?php echo htmlspecialchars($theme_color); ?>;
+        }
+        .login-branding {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-branding img {
+            max-height: 80px;
+            margin-bottom: 1rem;
+        }
+        .login-branding h1 {
+            color: var(--theme-color);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .btn-primary {
+            background-color: var(--theme-color);
+            border-color: var(--theme-color);
+        }
+        .btn-primary:hover {
+            background-color: var(--theme-color);
+            border-color: var(--theme-color);
+            filter: brightness(0.9);
+        }
+    </style>
 <body>
     <div class="login-container">
         <div class="login-card">
             <div class="login-branding">
+                <?php if ($logo_path && file_exists($logo_path)): ?>
+                    <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="School Logo">
+                <?php endif; ?>
                 <h1><?php echo htmlspecialchars($school_name ?? APP_NAME); ?></h1>
                 <p class="lead">SSLG Voting System</p>
             </div>

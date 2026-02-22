@@ -126,4 +126,46 @@ function logAdminAction($action, $details = '') {
         $_SERVER['REMOTE_ADDR'] ?? 'unknown'
     ]);
 }
+
+// System status functions
+function isSystemSetup() {
+    try {
+        $db = getDBConnection();
+        // Check if school_info has been configured with at least a school name
+        $stmt = $db->query("SELECT COUNT(*) as count FROM school_info WHERE school_name IS NOT NULL AND school_name != ''");
+        $result = $stmt->fetch();
+        return $result['count'] > 0;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+function isElectionOpen() {
+    try {
+        $db = getDBConnection();
+        $stmt = $db->query("SELECT is_open FROM election_settings ORDER BY id DESC LIMIT 1");
+        $result = $stmt->fetch();
+        return $result && $result['is_open'] == 1;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+function getElectionStatus() {
+    try {
+        $db = getDBConnection();
+        $stmt = $db->query("SELECT * FROM election_settings ORDER BY id DESC LIMIT 1");
+        $result = $stmt->fetch();
+        return $result ?? null;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+function blockAccessIfElectionOpen() {
+    if (isElectionOpen()) {
+        header('Location: election_blocked.php');
+        exit();
+    }
+}
 ?>

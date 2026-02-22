@@ -1,6 +1,13 @@
 <?php
 require_once 'includes/config.php';
 
+// If election is open, this page should not be directly accessible
+// Redirect to home page
+if (isElectionOpen()) {
+    header('Location: index.php');
+    exit();
+}
+
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'admin') {
@@ -15,6 +22,11 @@ if (isset($_SESSION['user_id'])) {
 $db = getDBConnection();
 $stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
 $school_name = $stmt->fetchColumn();
+
+// Get theme settings
+$election = $db->query("SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$theme_color = $election['theme_color'] ?? '#343a40';
+$logo_path = $election['logo_path'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -25,6 +37,9 @@ $school_name = $stmt->fetchColumn();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
     <style>
+        :root {
+            --theme-color: <?php echo htmlspecialchars($theme_color); ?>;
+        }
         .option-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             cursor: pointer;
@@ -35,7 +50,7 @@ $school_name = $stmt->fetchColumn();
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
         .welcome-section {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, var(--theme-color) 0%, #764ba2 100%);
             color: white;
             padding: 60px 0;
             margin-bottom: 50px;
@@ -50,6 +65,9 @@ $school_name = $stmt->fetchColumn();
 <body>
     <div class="welcome-section">
         <div class="container text-center">
+            <?php if ($logo_path && file_exists($logo_path)): ?>
+                <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="School Logo" class="mb-3" style="max-height: 100px;">
+            <?php endif; ?>
             <h1 class="display-4 fw-bold">Election Control</h1>
             <p class="lead">Student Voting Portal</p>
             <p class="mt-3">Access your voting options below</p>

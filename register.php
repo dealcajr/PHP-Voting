@@ -2,6 +2,12 @@
 require_once 'includes/config.php';
 requireRole('admin');
 
+// Block registration if election is open
+if (isElectionOpen()) {
+    header('Location: election_blocked.php');
+    exit();
+}
+
 $message = '';
 
 function generateNextStudentID($db) {
@@ -50,15 +56,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$student_id]);
                 if ($stmt->fetch()) {
                     $message = '<div class="alert alert-danger">Student ID already exists.</div>';
+                } else if (false) {
+                    // This will never execute, just placeholder for logic
                 } else {
-                    $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                    $voter_id_card = 'VOTER-' . strtoupper(substr(md5(uniqid()), 0, 8));
+                    // Check if LRN already exists
+                    $stmt = $db->prepare("SELECT id FROM users WHERE lrn = ?");
+                    $stmt->execute([$lrn]);
+                    if ($stmt->fetch()) {
+                        $message = '<div class="alert alert-danger">A student with this LRN already exists in the system. Please use a different LRN.</div>';
+                    } else {
+                        // Check if student with same profile (name, grade, section) already exists
+                        $stmt = $db->prepare("SELECT id FROM users WHERE first_name = ? AND last_name = ? AND grade = ? AND section = ?");
+                        $stmt->execute([$first_name, $last_name, $grade, $section]);
+                        if ($stmt->fetch()) {
+                            $message = '<div class="alert alert-danger">A student with the same name, grade, and section already exists. Please verify the information.</div>';
+                        } else {
+                            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                            $voter_id_card = 'VOTER-' . strtoupper(substr(md5(uniqid()), 0, 8));
 
-                    $stmt = $db->prepare("INSERT INTO users (student_id, lrn, password_hash, role, first_name, last_name, grade, section, voter_id_card) VALUES (?, ?, ?, 'voter', ?, ?, ?, ?, ?)");
-                    $stmt->execute([$student_id, $lrn, $password_hash, $first_name, $last_name, $grade, $section, $voter_id_card]);
+                            $stmt = $db->prepare("INSERT INTO users (student_id, lrn, password_hash, role, first_name, last_name, grade, section, voter_id_card) VALUES (?, ?, ?, 'voter', ?, ?, ?, ?, ?)");
+                            $stmt->execute([$student_id, $lrn, $password_hash, $first_name, $last_name, $grade, $section, $voter_id_card]);
 
-                    logAdminAction('student_registered', "Registered new student: $student_id");
-                    $message = '<div class="alert alert-success">Student registered successfully. Student ID: ' . $student_id . ', Voter ID: ' . $voter_id_card . '</div>';
+                            logAdminAction('student_registered', "Registered new student: $student_id");
+                            $message = '<div class="alert alert-success">Student registered successfully. Student ID: ' . $student_id . ', Voter ID: ' . $voter_id_card . '</div>';
+                        }
+                    }
                 }
             } catch (PDOException $e) {
                 $message = '<div class="alert alert-danger">Database error: ' . $e->getMessage() . '</div>';
@@ -71,6 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $db = getDBConnection();
 $stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
 $school_name = $stmt->fetchColumn();
+
+// Get theme settings
+$election = $db->query("SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$theme_color = $election['theme_color'] ?? '#343a40';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -80,14 +106,31 @@ $school_name = $stmt->fetchColumn();
     <title><?php echo $school_name ?? APP_NAME; ?> - Register Student</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
-</head>
+    <style>
+        :root {
+            --theme-color: <?php echo htmlspecialchars($theme_color); ?>;
+        }
+        .card-header {
+            background-color: var(--theme-color);
+            color: white;
+        }
+        .btn-primary {
+            background-color: var(--theme-color);
+            border-color: var(--theme-color);
+        }
+        .btn-primary:hover {
+            background-color: var(--theme-color);
+            border-color: var(--theme-color);
+            filter: brightness(0.9);
+        }
+    </style>
 <body>
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="card">
-                    <div class="card-header">
-                        <h2 class="text-center">Register New Student</h2>
+                    <div class="card-header" style="background-color: var(--theme-color); color: white;">
+                        <h2 class="text-center mb-0">Register New Student</h2>
                     </div>
                     <div class="card-body">
                         <?php echo $message; ?>

@@ -11,6 +11,12 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
+// If election is open and system is set up, redirect to vote_login.php
+if (isElectionOpen() && isSystemSetup()) {
+    header('Location: vote_login.php');
+    exit();
+}
+
 // Get school name and logo
 $db = getDBConnection();
 $stmt = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");

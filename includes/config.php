@@ -162,6 +162,20 @@ function getElectionStatus() {
     }
 }
 
+// Return a theme CSS root block using the latest election theme_color
+function getThemeRootStyle() {
+    $election = getElectionStatus();
+    $theme = $election['theme_color'] ?? '#343a40';
+    return "<style>:root { --theme-color: " . htmlspecialchars($theme, ENT_QUOTES, 'UTF-8') . "; }</style>";
+}
+
+// Return only the CSS declaration for theme color (to be used inside existing <style> blocks)
+function getThemeCSSDeclaration() {
+    $election = getElectionStatus();
+    $theme = $election['theme_color'] ?? '#343a40';
+    return '--theme-color: ' . htmlspecialchars($theme, ENT_QUOTES, 'UTF-8') . ';';
+}
+
 function blockAccessIfElectionOpen() {
     if (isElectionOpen()) {
         header('Location: election_blocked.php');

@@ -38,9 +38,7 @@ $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
     <style>
-        :root {
-            --theme-color: <?php echo htmlspecialchars($theme_color); ?>;
-        }
+        :root { <?php echo getThemeCSSDeclaration(); ?> }
         .option-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             cursor: pointer;

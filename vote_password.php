@@ -50,23 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         unset($_SESSION['voting_student_id']);
                         unset($_SESSION['voting_name']);
 
-                        // For voters, check if election token is required
-                        $election_stmt = $db->query("SELECT election_token FROM election_settings WHERE is_open = 1 ORDER BY id DESC LIMIT 1");
-                        $election = $election_stmt->fetch();
-                        if ($election && !empty($election['election_token'])) {
-                            // Check if user has already validated token
-                            $user_stmt = $db->prepare("SELECT token_validated FROM users WHERE id = ?");
-                            $user_stmt->execute([$_SESSION['user_id']]);
-                            $user_data = $user_stmt->fetch();
-                            if ($user_data && $user_data['token_validated'] == 1) {
-                                $_SESSION['election_token_validated'] = true;
-                                header('Location: vote.php');
-                            } else {
-                                header('Location: token_input.php');
-                            }
-                        } else {
-                            header('Location: vote.php');
-                        }
+                        // Proceed directly to voting (no election access token required)
+                        header('Location: vote.php');
                         exit();
                     }
                 } else {

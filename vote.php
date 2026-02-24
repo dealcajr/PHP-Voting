@@ -21,13 +21,7 @@ if (!$election || !$election['is_open']) {
     exit();
 }
 
-// Check if election token is required and validated in session
-if (!empty($election['election_token'])) {
-    if (!isset($_SESSION['election_token_validated']) || $_SESSION['election_token_validated'] !== true) {
-        header('Location: token_input.php');
-        exit();
-    }
-}
+// Election access token removed: voters no longer require an access token to proceed
 
 // Check if user has already voted for all positions
 $user_id = $_SESSION['user_id'];

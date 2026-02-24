@@ -107,9 +107,7 @@ $theme_color = $election['theme_color'] ?? '#343a40';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
     <style>
-        :root {
-            --theme-color: <?php echo htmlspecialchars($theme_color); ?>;
-        }
+        :root { <?php echo getThemeCSSDeclaration(); ?> }
         .card-header {
             background-color: var(--theme-color);
             color: white;

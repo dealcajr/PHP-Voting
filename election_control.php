@@ -37,9 +37,7 @@ $logo_path = $election['logo_path'] ?? null;
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
     <style>
-        :root {
-            --theme-color: <?php echo htmlspecialchars($theme_color); ?>;
-        }
+        :root { <?php echo getThemeCSSDeclaration(); ?> }
         .option-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             cursor: pointer;
@@ -75,25 +73,7 @@ $logo_path = $election['logo_path'] ?? null;
     </div>
 
     <div class="container">
-        <div class="row g-4 justify-content-center">
-            <!-- Vote Now Card -->
-            <div class="col-lg-4 col-md-6">
-                <div class="card option-card border-primary h-100" onclick="window.location.href='vote_login.php'">
-                    <div class="card-body text-center p-5">
-                        <div class="card-icon text-primary">
-                            <i class="bi bi-check2-circle"></i>
-                        </div>
-                        <h3 class="card-title text-primary fw-bold">Vote Now</h3>
-                        <p class="card-text text-muted">
-                            Enter your Student ID to cast your vote in the current election.
-                        </p>
-                        <div class="mt-4">
-                            <span class="badge bg-primary">Quick Vote</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
+        <div class="row g-4 justify-content-center">    
             <!-- Student Registration Card -->
             <div class="col-lg-4 col-md-6">
                 <div class="card option-card border-info h-100" onclick="window.location.href='student_register.php'">

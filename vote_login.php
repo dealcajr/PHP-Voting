@@ -81,11 +81,9 @@ $logo_path = $election['logo_path'] ?? null;
         :root { <?php echo getThemeCSSDeclaration(); ?> }
         .login-branding {
             text-align: center;
-            margin-bottom: 2rem;
         }
         .login-branding img {
             max-height: 80px;
-            margin-bottom: 1rem;
         }
         .login-branding h1 {
             color: var(--theme-color);

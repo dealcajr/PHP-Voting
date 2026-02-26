@@ -1,6 +1,34 @@
 /* Basic Admin Styles */
+:root {
+    --bg-color: #141414;
+    --text-color: #333;
+    --card-bg: #fff;
+    --card-border: #dee2e6;
+    --sidebar-bg: #343a40;
+    --sidebar-text: #adb5bd;
+    --sidebar-text-active: #fff;
+    --header-bg: #343a40;
+    --header-text: #fff;
+    --table-border: #dee2e6;
+}
+
+body.dark-mode {
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --card-bg: #2d2d2d;
+    --card-border: #444;
+    --sidebar-bg: #1a1a1a;
+    --sidebar-text: #999;
+    --sidebar-text-active: #fff;
+    --header-bg: #1a1a1a;
+    --header-text: #e0e0e0;
+    --table-border: #444;
+}
+
 body {
-    background-color: #f8f9fa;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .admin-wrapper {
@@ -11,51 +39,82 @@ body {
 .admin-header {
     width: auto;
     height: 100px;
-    background-color: #343a40;
-    color: #fff;
+    background-color: var(--header-bg);
+    color: var(--header-text);
     padding: 10px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid var(--card-border);
 }
 
 .admin-header .navbar-brand {
-    color: #fff;
+    color: var(--header-text);
 }
 
 .admin-sidebar {
     width: auto;
     height: auto;
-    background-color: #343a40;
+    background-color: var(--sidebar-bg);
     padding: 20px;
     display: flex;
     flex-direction: column;
+    border-right: 1px solid var(--card-border);
 }
 
 .admin-sidebar .nav-link {
-    color: #adb5bd;
+    color: var(--sidebar-text);
 }
 
 .admin-sidebar .nav-link.active,
 .admin-sidebar .nav-link:hover {
-    color: #fff;
+    color: var(--sidebar-text-active);
 }
 
 .admin-main {
     flex-grow: 1;
     padding: 20px;
+    background-color: var(--bg-color);
 }
 
-.admin-content h2 {
+.admin-content h2, .admin-content h1, .admin-content h4 {
+    color: var(--text-color);
     margin-bottom: 20px;
 }
 
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+}
+
+.card-header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.table {
+    color: var(--text-color);
+    border-color: var(--card-border);
+}
+
+.table th, .table td {
+    border-color: var(--card-border);
+}
+
+.form-control, .form-select {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-color: var(--card-border);
+}
+
 .widget {
-    background-color: #fff;
+    background-color: var(--card-bg);
     padding: 20px;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
+    color: var(--text-color);
 }
 
 .widget h3 {

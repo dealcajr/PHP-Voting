@@ -9,7 +9,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     <link href="../assets/css/style.css" rel="stylesheet">
     <link href="../assets/css/admin_style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <style>
+        .theme-toggle-btn {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            cursor: pointer;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .theme-toggle-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+            color: #fff;
+        }
+        body.dark-mode .theme-toggle-btn {
+            border-color: rgba(224,224,224,0.3);
+        }
+
         .admin-content .header {
             text-align: center;
             padding: 40px 20px;
@@ -213,6 +232,24 @@
             border-color: #d6d8db;
         }
 
+        .theme-toggle-btn {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            cursor: pointer;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+        }
+        .theme-toggle-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+        }
+        body.dark-mode .theme-toggle-btn {
+            border-color: rgba(224,224,224,0.3);
+        }
+
         @media (max-width: 768px) {
             .admin-content .content {
                 flex-direction: column;
@@ -237,12 +274,30 @@
 </head>
 <body>
     <header class="admin-header">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.php"><?php echo SCHOOL_NAME; ?></a>
-            <h6>SSLG Voting System - Admin</h6>
-            <div class="d-flex">
-                <a href="../logout.php" class="btn btn-outline-light">Logout</a>
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <div>
+                <a class="navbar-brand" href="index.php"><?php echo SCHOOL_NAME; ?></a>
+                <h6 style="margin: 0; color: #adb5bd;">SSLG Voting System - Admin</h6>
             </div>
+            <button class="theme-toggle-btn" id="themeToggle" title="Toggle Dark Mode">
+                <i class="bi bi-moon-stars"></i> Dark
+            </button>
         </div>
     </header>
     <div class="admin-wrapper">
+
+    <script>
+        // Load theme preference from localStorage
+        const savedTheme = localStorage.getItem('adminTheme') || 'light';
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('themeToggle').innerHTML = '<i class="bi bi-sun"></i> Light';
+        }
+
+        // Toggle theme on button click
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('adminTheme', isDarkMode ? 'dark' : 'light');
+            this.innerHTML = isDarkMode ? '<i class="bi bi-sun"></i> Light' : '<i class="bi bi-moon-stars"></i> Dark';
+        });
+    </script>

@@ -18,6 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_candidate'])) {
         $grade = sanitizeInput($_POST['grade'] ?? '');
         $manifesto = sanitizeInput($_POST['manifesto'] ?? '');
 
+        // Disallow Grade 12 from being candidates. Normalize digits and check.
+        $grade_digits = preg_replace('/\D+/', '', $grade);
+        if ($grade_digits !== '' && intval($grade_digits) === 12) {
+            $message = '<div class="alert alert-danger">Students in Grade 12 are not eligible to run as candidates.</div>';
+        }
+
         // Handle photo upload
         $photo_path = null;
         if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
@@ -67,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_candidate'])) {
     }
 }
 
-// Handle candidate actions (activate/deactivate/delete)
+// Handle candidate actions (activate/delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $message = '<div class="alert alert-danger">Invalid request.</div>';
@@ -80,10 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $db->prepare("UPDATE candidates SET is_active = 1 WHERE id = ?")->execute([$candidate_id]);
                 logAdminAction('candidate_activated', "Activated candidate ID: $candidate_id");
                 $message = '<div class="alert alert-success">Candidate activated successfully.</div>';
-            } elseif ($action === 'deactivate') {
-                $db->prepare("UPDATE candidates SET is_active = 0 WHERE id = ?")->execute([$candidate_id]);
-                logAdminAction('candidate_deactivated', "Deactivated candidate ID: $candidate_id");
-                $message = '<div class="alert alert-success">Candidate deactivated successfully.</div>';
             } elseif ($action === 'delete') {
                 $db->prepare("DELETE FROM candidates WHERE id = ?")->execute([$candidate_id]);
                 logAdminAction('candidate_deleted', "Deleted candidate ID: $candidate_id");
@@ -108,17 +110,15 @@ include '../includes/admin_sidebar.php';
 ?>
 
 <div class="admin-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Candidate Management</h1>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#candidateModal">Add New Candidate</button>
-    </div>
+    <h1 class="mb-4">Candidate Management</h1>
 
     <?php echo $message; ?>
 
     <!-- Candidates Table -->
     <div class="card">
-        <div class="card-header">
-            <h4>Candidates (<?php echo count($candidates); ?>)</h4>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Candidates (<?php echo count($candidates); ?>)</h4>
+            <button type="button" class="btn btn-primary btn-sm" style="font-size:.7rem;padding:.15rem .9rem;width:9.2rem;" data-bs-toggle="modal" data-bs-target="#candidateModal" title="Making New Candidate">Add New Candidate</button>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -130,7 +130,6 @@ include '../includes/admin_sidebar.php';
                             <th>Position</th>
                             <th>Party</th>
                             <th>Grade & Section</th>
-                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -151,21 +150,16 @@ include '../includes/admin_sidebar.php';
                                 <td><?php echo htmlspecialchars($candidate['party'] ?? 'Independent'); ?></td>
                                 <td><?php echo htmlspecialchars('Grade ' . $candidate['grade'] . '-' . $candidate['section']); ?></td>
                                 <td>
-                                    <span class="badge <?php echo $candidate['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
-                                        <?php echo $candidate['is_active'] ? 'Active' : 'Inactive'; ?>
-                                    </span>
-                                </td>
-                                <td>
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="editCandidate(<?php echo htmlspecialchars(json_encode($candidate)); ?>)">Edit</button>
-                                        <form method="POST" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                            <input type="hidden" name="candidate_id" value="<?php echo $candidate['id']; ?>">
-                                            <input type="hidden" name="action" value="<?php echo $candidate['is_active'] ? 'deactivate' : 'activate'; ?>">
-                                            <button type="submit" class="btn btn-outline-<?php echo $candidate['is_active'] ? 'warning' : 'success'; ?> btn-sm">
-                                                <?php echo $candidate['is_active'] ? 'Deactivate' : 'Activate'; ?>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-outline-primary btn-sm edit-candidate-btn" data-candidate='<?php echo htmlspecialchars(json_encode($candidate), ENT_QUOTES); ?>'>Edit</button>
+                                        <?php if (!$candidate['is_active']): ?>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                                <input type="hidden" name="candidate_id" value="<?php echo $candidate['id']; ?>">
+                                                <input type="hidden" name="action" value="activate">
+                                                <button type="submit" class="btn btn-outline-success btn-sm">Activate</button>
+                                            </form>
+                                        <?php endif; ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this candidate?')">
                                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                             <input type="hidden" name="candidate_id" value="<?php echo $candidate['id']; ?>">
@@ -258,29 +252,76 @@ include '../includes/admin_sidebar.php';
     </div>
 </div>
 
-<script>
-    const candidateModal = new bootstrap.Modal(document.getElementById('candidateModal'));
-    const modalTitle = document.getElementById('modalTitle');
-    const candidateForm = document.getElementById('candidateForm');
 
-    function editCandidate(candidate) {
-        modalTitle.textContent = 'Edit Candidate';
-        candidateForm.reset();
-        document.getElementById('candidate_id').value = candidate.id;
-        document.getElementById('name').value = candidate.name;
-        document.getElementById('position').value = candidate.position;
-        document.getElementById('party').value = candidate.party;
-        document.getElementById('grade').value = candidate.grade;
-        document.getElementById('section').value = candidate.section;
-        document.getElementById('manifesto').value = candidate.manifesto;
-        candidateModal.show();
-    }
-
-    document.getElementById('candidateModal').addEventListener('hidden.bs.modal', function () {
-        modalTitle.textContent = 'Add New Candidate';
-        candidateForm.reset();
-        document.getElementById('candidate_id').value = '';
-    });
-</script>
 
 <?php include __DIR__ . '/../includes/admin_footer.php'; ?>
+
+<script>
+    // run after bootstrap bundle loads
+    document.addEventListener('DOMContentLoaded', function () {
+        const candidateModal = new bootstrap.Modal(document.getElementById('candidateModal'));
+        const modalTitle = document.getElementById('modalTitle');
+        const candidateForm = document.getElementById('candidateForm');
+
+        function editCandidate(candidate) {
+            modalTitle.textContent = 'Edit Candidate';
+            candidateForm.reset();
+            document.getElementById('candidate_id').value = candidate.id;
+            document.getElementById('name').value = candidate.name || '';
+            document.getElementById('position').value = candidate.position || '';
+            document.getElementById('party').value = candidate.party || '';
+            document.getElementById('grade').value = candidate.grade || '';
+            document.getElementById('section').value = candidate.section || '';
+            document.getElementById('manifesto').value = candidate.manifesto || '';
+            candidateModal.show();
+        }
+
+        // Delegate edit button clicks
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest && e.target.closest('.edit-candidate-btn');
+            if (!btn) return;
+            const data = btn.getAttribute('data-candidate');
+            if (!data) return;
+            try {
+                const candidate = JSON.parse(data);
+                editCandidate(candidate);
+            } catch (err) {
+                console.error('Failed to parse candidate data', err);
+            }
+        });
+
+        document.getElementById('candidateModal').addEventListener('hidden.bs.modal', function () {
+            modalTitle.textContent = 'Add New Candidate';
+            candidateForm.reset();
+            document.getElementById('candidate_id').value = '';
+        });
+
+        // validation logic copied here too
+        candidateForm.addEventListener('submit', function (e) {
+            const gradeVal = document.getElementById('grade').value || '';
+            const digits = gradeVal.replace(/\D+/g, '');
+            if (digits && parseInt(digits, 10) === 12) {
+                e.preventDefault();
+                alert('Students in Grade 12 are not eligible to run as candidates.');
+                return false;
+            }
+        });
+
+        (function() {
+            const gradeInput = document.getElementById('grade');
+            if (!gradeInput) return;
+            let lastWas12 = false;
+            gradeInput.addEventListener('input', function () {
+                const digits = (this.value || '').replace(/\D+/g, '');
+                const is12 = digits !== '' && parseInt(digits, 10) === 12;
+                if (is12 && !lastWas12) {
+                    lastWas12 = true;
+                    alert('Students in Grade 12 are not eligible to run as candidates.');
+                    this.value = '';
+                } else if (!is12) {
+                    lastWas12 = false;
+                }
+            });
+        })();
+    });
+</script>

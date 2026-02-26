@@ -54,7 +54,7 @@ include '../includes/admin_sidebar.php';
     --theme-color: <?php echo htmlspecialchars($settings['theme_color']); ?>;
 }
 .dashboard-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #667eea;
     color: white;
     padding: 3rem 0;
     margin-bottom: 2rem;
@@ -94,7 +94,7 @@ include '../includes/admin_sidebar.php';
     left: 0;
     width: 4px;
     height: 100%;
-    background: linear-gradient(135deg, var(--theme-color), #764ba2);
+    background: var(--theme-color);
 }
 
 .stat-card .stat-icon {
@@ -108,11 +108,11 @@ include '../includes/admin_sidebar.php';
     margin-bottom: 1rem;
 }
 
-.stat-card.students .stat-icon { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-.stat-card.voted .stat-icon { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
-.stat-card.turnout .stat-icon { background: linear-gradient(135deg, #ffc107, #fd7e14); color: white; }
-.stat-card.candidates .stat-icon { background: linear-gradient(135deg, #e83e8c, #dc3545); color: white; }
-.stat-card.votes .stat-icon { background: linear-gradient(135deg, #6f42c1, #6610f2); color: white; }
+.stat-card.students .stat-icon { background: #667eea; color: white; }
+.stat-card.voted .stat-icon { background: #28a745; color: white; }
+.stat-card.turnout .stat-icon { background: #ffc107; color: white; }
+.stat-card.candidates .stat-icon { background: #e83e8c; color: white; }
+.stat-card.votes .stat-icon { background: #6f42c1; color: white; }
 
 .stat-card .stat-value {
     font-size: 2.5rem;
@@ -163,7 +163,7 @@ include '../includes/admin_sidebar.php';
 }
 
 .action-btn:hover {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: #667eea;
     color: white;
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -193,9 +193,9 @@ include '../includes/admin_sidebar.php';
     font-size: 1.1rem;
 }
 
-.status-active { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
-.status-inactive { background: linear-gradient(135deg, #ffc107, #fd7e14); color: white; }
-.status-closed { background: linear-gradient(135deg, #6c757d, #495057); color: white; }
+.status-active { background: #28a745; color: white; }
+.status-inactive { background: #ffc107; color: white; }
+.status-closed { background: #6c757d; color: white; }
 
 .results-section {
     background: white;
@@ -291,7 +291,7 @@ include '../includes/admin_sidebar.php';
             </div>
             <div class="col-lg-2 col-md-4 col-sm-6">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #17a2b8, #138496); color: white;">
+                    <div class="stat-icon" style="background: #17a2b8; color: white;">
                         <i class="fas fa-cog"></i>
                     </div>
                     <div class="stat-value">

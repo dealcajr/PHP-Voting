@@ -1,7 +1,7 @@
 /* Basic Admin Styles */
 :root {
-    --bg-color: #141414;
-    --text-color: #333;
+    --bg-color: #ffffff;
+    --text-color: #ffffff;
     --card-bg: #fff;
     --card-border: #dee2e6;
     --sidebar-bg: #343a40;
@@ -10,19 +10,6 @@
     --header-bg: #343a40;
     --header-text: #fff;
     --table-border: #dee2e6;
-}
-
-body.dark-mode {
-    --bg-color: #1a1a1a;
-    --text-color: #e0e0e0;
-    --card-bg: #2d2d2d;
-    --card-border: #444;
-    --sidebar-bg: #1a1a1a;
-    --sidebar-text: #999;
-    --sidebar-text-active: #fff;
-    --header-bg: #1a1a1a;
-    --header-text: #e0e0e0;
-    --table-border: #444;
 }
 
 body {
@@ -53,13 +40,34 @@ body {
 }
 
 .admin-sidebar {
-    width: auto;
-    height: auto;
+    width: 60px;
+    height: flex;
     background-color: var(--sidebar-bg);
-    padding: 20px;
+    padding: 20px 10px;
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--card-border);
+    transition: width 0.3s;
+    overflow: hidden;
+}
+.admin-sidebar:hover,
+.admin-sidebar.expanded {
+    width: 220px;
+}
+.admin-sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+}
+.admin-sidebar .nav-link .link-text {
+    margin-left: 10px;
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+.admin-sidebar.collapsed .link-text {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .admin-sidebar .nav-link {

@@ -54,8 +54,8 @@ include '../includes/admin_sidebar.php';
     --theme-color: <?php echo htmlspecialchars($settings['theme_color']); ?>;
 }
 .dashboard-header {
-    background: #667eea;
-    color: white;
+    background: #007a1b;
+    color: #fff;
     padding: 3rem 0;
     margin-bottom: 2rem;
     border-radius: 0 0 20px 20px;
@@ -63,10 +63,9 @@ include '../includes/admin_sidebar.php';
 }
 
 .dashboard-header .school-logo {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 4px solid rgba(255,255,255,0.3);
+    width: 100px;
+    height: 100px;
+    color: white;
     object-fit: cover;
 }
 
@@ -163,7 +162,7 @@ include '../includes/admin_sidebar.php';
 }
 
 .action-btn:hover {
-    background: #667eea;
+    background: #007a1b;
     color: white;
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -195,7 +194,7 @@ include '../includes/admin_sidebar.php';
 
 .status-active { background: #28a745; color: white; }
 .status-inactive { background: #ffc107; color: white; }
-.status-closed { background: #6c757d; color: white; }
+.status-closed { background: #aa0606; color: white; }
 
 .results-section {
     background: white;

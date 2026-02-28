@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
             if ($action === 'update_theme') {
-                $theme_color = sanitizeInput($_POST['theme_color'] ?? '#343a40');
+                $theme_color = sanitizeInput($_POST['theme_color'] ?? '#007a1b');
                 $allowed_ips = sanitizeInput($_POST['allowed_ips'] ?? '');
 
                 // Handle logo upload

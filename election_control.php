@@ -48,7 +48,7 @@ $logo_path = $election['logo_path'] ?? null;
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
         .welcome-section {
-            background: linear-gradient(135deg, var(--theme-color) 0%, #764ba2 100%);
+            background: #007a1b;
             color: white;
             padding: 60px 0;
             margin-bottom: 50px;

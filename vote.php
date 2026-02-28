@@ -174,18 +174,7 @@ if ($positions) {
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#"><?php echo APP_NAME; ?></a>
-            <div class="navbar-nav ms-auto">
-                <span class="navbar-text me-3">Welcome, <?php echo htmlspecialchars($_SESSION['student_id']); ?></span>
-                <a class="nav-link" href="results.php">Results</a>
-                <a class="nav-link" href="logout.php">Logout</a>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
+    <div class="container mt-5">
         <div class="row">
             <div class="col-lg-8">
                 <h1>Cast Your Vote</h1>
@@ -284,7 +273,7 @@ if ($positions) {
                 <?php endif; ?>
             </div>
 
-            <div class="col-lg-4">
+            <div class="col-lg-4 mt-5">
                 <div class="card mb-4">
                     <div class="card-header">
                         <h4>Voting Progress</h4>

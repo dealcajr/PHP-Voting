@@ -21,12 +21,12 @@ $election = getElectionStatus();
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #007a1b;
         }
         .blocked-card {
             background: white;
             border-radius: 15px;
-            padding: 3rem;
+            padding: 2rem;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             max-width: 600px;
             text-align: center;
@@ -47,7 +47,7 @@ $election = getElectionStatus();
             margin-bottom: 2rem;
         }
         .blocked-action {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: #007a1b;
             color: white;
             padding: 1rem 2rem;
             border-radius: 8px;

@@ -82,11 +82,7 @@ $logo_path = $election['logo_path'] ?? null;
         .login-branding {
             text-align: center;
         }
-        .login-branding img {
-            max-height: 80px;
-        }
         .login-branding h1 {
-            color: var(--theme-color);
             font-weight: bold;
             margin-bottom: 0.5rem;
         }
@@ -104,9 +100,6 @@ $logo_path = $election['logo_path'] ?? null;
     <div class="login-container">
         <div class="login-card">
             <div class="login-branding">
-                <?php if ($logo_path && file_exists($logo_path)): ?>
-                    <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="School Logo">
-                <?php endif; ?>
                 <h1><?php echo htmlspecialchars($school_name ?? APP_NAME); ?></h1>
                 <p class="lead">SSLG Voting System</p>
             </div>

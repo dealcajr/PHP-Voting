@@ -111,14 +111,12 @@ $logo_path = $election['logo_path'] ?? null;
         :root { <?php echo getThemeCSSDeclaration(); ?> }
         .login-branding {
             text-align: center;
-            margin-bottom: 2rem;
         }
         .login-branding img {
             max-height: 80px;
             margin-bottom: 1rem;
         }
         .login-branding h1 {
-            color: var(--theme-color);
             font-weight: bold;
             margin-bottom: 0.5rem;
         }
@@ -132,7 +130,7 @@ $logo_path = $election['logo_path'] ?? null;
             filter: brightness(0.9);
         }
         .modal-header {
-            background-color: var(--theme-color);
+            background-color: #007a1b;
         }
         .alert-info {
             border-left: 4px solid var(--theme-color);

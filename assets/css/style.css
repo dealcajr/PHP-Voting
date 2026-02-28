@@ -2,7 +2,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
+    background-color: #fff;
 }
 
 .navbar-brand {
@@ -16,21 +16,21 @@ body {
 }
 
 .card-header {
-    background-color: #007bff;
-    color: white;
+    background-color: #007a1b;
+    color: #fff;
     border-radius: 10px 10px 0 0 !important;
     border: none;
 }
 
 .btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
+    background-color: #007a1b;
+    border-color: #007a1b;
     border-radius: 5px;
 }
 
 .btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
+    background-color: #007a1b;
+    border-color: #007a1b;
 }
 
 .form-control {
@@ -39,7 +39,7 @@ body {
 }
 
 .form-control:focus {
-    border-color: #007bff;
+    border-color: #007a1b;
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
@@ -53,13 +53,13 @@ body {
 }
 
 .table thead th {
-    background-color: #007bff;
+    background-color: #007a1b;
     color: white;
     border: none;
 }
 
 .table tbody tr:hover {
-    background-color: #f8f9fa;
+    background-color: #007a1b;
 }
 
 .badge {
@@ -110,8 +110,8 @@ body {
 }
 
 .candidate-card.selected {
-    border: 2px solid #007bff;
-    background-color: #e7f3ff;
+    border: 2px solid #007a1b;
+    background-color: #007a1b;
 }
 
 .vote-confirmation {
@@ -126,16 +126,16 @@ body {
     font-family: monospace;
     font-size: 1.2em;
     font-weight: bold;
-    color: #007bff;
+    color: #007a1b;
     background-color: #f8f9fa;
     padding: 10px;
     border-radius: 5px;
-    border: 1px dashed #007bff;
+    border: 1px dashed #007a1b;
 }
 
 /* Admin dashboard styles */
 .admin-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background:#007a1b;
     color: white;
 }
 
@@ -194,7 +194,7 @@ body {
     width: 100%;
     align-items: center;
     justify-content: center;
-    background-color: #f8f9fa;
+    background-color: white;
 }
 
 .login-card {
@@ -207,7 +207,7 @@ body {
 }
 
 .login-branding {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    background: #007a1b;
     color: white;
     padding: 40px;
     display: flex;

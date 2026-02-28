@@ -53,7 +53,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 ?>
 
 <div class="admin-content">
-    <h2>Change Password</h2>
+    <h2>Admin Settings</h2>
 
     <?php if ($message): ?>
         <div class="alert alert-success"><?php echo htmlspecialchars($message); ?></div>

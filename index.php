@@ -25,9 +25,10 @@ $school_name = $school_info['school_name'] ?? APP_NAME;
 $school_logo_path = $school_info['logo_path'] ?? null;
 
 // Get theme settings
-$election = $db->query( "SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$election = $db->query("SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
 $theme_color = $election['theme_color'] ?? '#343a40';
 $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -54,6 +55,21 @@ $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
             padding: 60px 0;
             margin-bottom: 50px;
         }
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            min-height: 120px;
+        }
+        .logo-container img {
+            max-width: 150px;
+            max-height: 150px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
         .card-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
@@ -64,9 +80,11 @@ $logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
 <body>
     <div class="welcome-section">
         <div class="container text-center">
-            <?php if ($school_logo_path): ?>
-                <img src="<?php echo htmlspecialchars($school_logo_path); ?>" alt="School Logo" class="mb-3" style="max-height: 100px;">
-            <?php endif; ?>
+            <div class="logo-container">
+                <?php if ($logo_path): ?>
+                    <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="School Logo">
+                <?php endif; ?>
+            </div>
             <h1 class="display-4 fw-bold"><?php echo htmlspecialchars($school_name ?? APP_NAME); ?></h1>
             <p class="lead">Student Supreme Learner Government Voting System</p>
             <p class="mt-3">Choose your access option below</p>

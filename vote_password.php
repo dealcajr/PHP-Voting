@@ -30,13 +30,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $db = getDBConnection();
-                $stmt = $db->prepare("SELECT password_hash, role, is_active FROM users WHERE id = ?");
+                $stmt = $db->prepare("SELECT password_hash, role, is_active, has_voted FROM users WHERE id = ?");
                 $stmt->execute([$_SESSION['voting_user_id']]);
                 $user = $stmt->fetch();
 
                 if ($user && password_verify($password, $user['password_hash'])) {
                     if (!$user['is_active']) {
                         $login_error = 'Your account is deactivated. Please contact an administrator.';
+                    } elseif (!empty($user['has_voted'])) {
+                        // Clear voting session and redirect to login with error
+                        unset($_SESSION['voting_lrn'], $_SESSION['voting_user_id'], $_SESSION['voting_student_id'], $_SESSION['voting_name']);
+                        header('Location: vote_login.php?already_voted=1');
+                        exit();
                     } else {
                         // Successful login for voting
                         $_SESSION['user_id'] = $_SESSION['voting_user_id'];

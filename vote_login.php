@@ -32,13 +32,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $db = getDBConnection();
-                $stmt = $db->prepare("SELECT id, role, is_active, first_name, last_name, student_id FROM users WHERE lrn = ? AND role = 'voter'");
+                $stmt = $db->prepare("SELECT id, role, is_active, has_voted, first_name, last_name, student_id FROM users WHERE lrn = ? AND role = 'voter'");
                 $stmt->execute([$lrn]);
                 $user = $stmt->fetch();
 
                 if ($user) {
                     if (!$user['is_active']) {
                         $login_error = 'Your account is deactivated. Please contact an administrator.';
+                    } elseif (!empty($user['has_voted'])) {
+                        $login_error = 'You have already cast your vote. Voting is only allowed once. Please contact an administrator if you believe this is an error.';
                     } else {
                         // Store LRN in session and redirect to password page
                         $_SESSION['voting_lrn'] = $lrn;
@@ -126,7 +128,9 @@ $theme_color = $election['theme_color'] ?? '#343a40';
                 <h2 class="text-center mb-4">Vote Now</h2>
                 <p class="text-center text-muted mb-4">Enter your LRN to cast your vote.</p>
 
-                <?php if ($login_error): ?>
+                <?php if (isset($_GET['already_voted'])): ?>
+                    <div class="alert alert-danger">You have already cast your vote. Voting is only allowed once. Please contact an administrator if you believe this is an error.</div>
+                <?php elseif ($login_error): ?>
                     <div class="alert alert-danger"><?php echo $login_error; ?></div>
                 <?php endif; ?>
 

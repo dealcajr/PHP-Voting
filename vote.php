@@ -103,6 +103,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
                 if (!$has_error) {
                     $db->commit();
                     if ($votes_cast > 0) {
+                        // Mark voter as having voted (one-time vote only)
+                        $db->prepare("UPDATE users SET has_voted = 1 WHERE id = ?")->execute([$user_id]);
+
                         // Set one-time success flag and voter name for the success page
                         $_SESSION['vote_success'] = true;
                         $_SESSION['voter_display_name'] = $_SESSION['first_name'] ?? '';

@@ -288,7 +288,7 @@ include '../includes/admin_sidebar.php';
                                 <label for="position" class="form-label">Position *</label>
                                 <select class="form-control" id="position" name="position" required>
                                     <option value="">Select Position</option>
-                                    <?php foreach ($positions as $pos): ?>
+                                    <?php foreach ($all_positions as $pos): ?>
                                         <option value="<?php echo htmlspecialchars($pos); ?>"><?php echo htmlspecialchars($pos); ?></option>
                                     <?php endforeach; ?>
                                 </select>
@@ -300,7 +300,17 @@ include '../includes/admin_sidebar.php';
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="party" class="form-label">Party</label>
-                                <input type="text" class="form-control" id="party" name="party" placeholder="Leave empty for Independent">
+                                <input type="text" class="form-control" id="party" name="party"
+                                       list="partyList"
+                                       placeholder="Select existing or type a new party name"
+                                       autocomplete="off">
+                                <datalist id="partyList">
+                                    <option value="Independent">
+                                    <?php foreach ($all_parties as $p): ?>
+                                        <option value="<?php echo htmlspecialchars($p); ?>">
+                                    <?php endforeach; ?>
+                                </datalist>
+                                <small class="text-muted">Choose an existing party or type a new one. Leave empty for Independent.</small>
                             </div>
                         </div>
                         <div class="col-md-3">

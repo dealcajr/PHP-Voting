@@ -12,10 +12,18 @@
     --table-border: #dee2e6;
 }
 
+/* Page Transition */
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
-    transition: background-color 0.3s, color 0.3s;
+    opacity: 0;
+    transition: opacity 0.35s ease, background-color 0.3s, color 0.3s;
+}
+body.page-loaded {
+    opacity: 1;
+}
+body.page-leaving {
+    opacity: 0;
 }
 
 .admin-wrapper {

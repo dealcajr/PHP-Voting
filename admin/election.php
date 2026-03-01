@@ -95,12 +95,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } elseif ($comm['is_active'] != 1) {
                         $message = '<div class="alert alert-danger">Commissioner is not active.</div>';
                     } else {
-                        $token = bin2hex(random_bytes(8));
+                        $token = bin2hex(random_bytes(4));
                         $ustmt = $db->prepare("UPDATE commissioners SET token = ? WHERE id = ?");
                         $ustmt->execute([$token, $commId]);
                         logAdminAction('commissioner_token_generated', 'Generated token for commissioner ' . $commId);
                         $message = '<div class="alert alert-success">New token generated for commissioner.</div>';
                     }
+                }
+            } elseif ($action === 'generate_all_tokens') {
+                // Generate new tokens for all active commissioners
+                $allComm = $db->query("SELECT id FROM commissioners WHERE is_active = 1")->fetchAll(PDO::FETCH_COLUMN);
+                if (empty($allComm)) {
+                    $message = '<div class="alert alert-warning">No active commissioners found.</div>';
+                } else {
+                    $ustmt = $db->prepare("UPDATE commissioners SET token = ? WHERE id = ?");
+                    foreach ($allComm as $cid) {
+                        $token = bin2hex(random_bytes(4));
+                        $ustmt->execute([$token, $cid]);
+                    }
+                    logAdminAction('all_tokens_generated', 'Generated new tokens for all commissioners');
+                    $message = '<div class="alert alert-success">New tokens generated for all commissioners.</div>';
                 }
             } elseif ($action === 'clear_commissioner_token') {
                 $commId = intval($_POST['commissioner_id'] ?? 0);
@@ -199,44 +213,75 @@ include '../includes/admin_sidebar.php';
                             $commissioners = $db->query("SELECT id, commission_type, name, token, is_active FROM commissioners ORDER BY commission_type")->fetchAll(PDO::FETCH_ASSOC);
                             ?>
 
-                <!-- Election Reports (moved to right column) -->
-                <!-- originally placed here but relocated below to maintain two-column layout -->
-                            <?php if (!empty($commissioners)): ?>
-                                <?php foreach ($commissioners as $commissioner): ?>
-                                    <div class="mb-3 p-3 border rounded">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong><?php echo htmlspecialchars($commissioner['name']); ?></strong><br>
-                                                <small class="text-muted"><?php echo ucfirst($commissioner['commission_type']); ?> Commissioner</small>
+                <!-- Generate All Tokens button -->
+                <div class="mb-3">
+                    <form method="POST" class="d-inline" onsubmit="return confirm('Generate new tokens for ALL commissioners? Their current tokens will be replaced.');">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                        <input type="hidden" name="action" value="generate_all_tokens">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="bi bi-arrow-repeat me-1"></i>Generate New Tokens for All
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Commissioner token rows -->
+                <div id="commissionerTokensSection">
+                        <?php if (!empty($commissioners)): ?>
+                            <?php foreach ($commissioners as $idx => $commissioner): ?>
+                                <div class="mb-3 p-3 border rounded commissioner-row"
+                                     data-name="<?php echo htmlspecialchars($commissioner['name']); ?>"
+                                     data-type="<?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $commissioner['commission_type']))); ?>"
+                                     data-token="<?php echo htmlspecialchars($commissioner['token'] ?? ''); ?>">
+                                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                        <div>
+                                            <strong><?php echo htmlspecialchars($commissioner['name']); ?></strong><br>
+                                            <small class="text-muted"><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $commissioner['commission_type']))); ?> Commissioner</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <!-- Token status indicator (no token value shown) -->
+                                            <div class="mb-2">
+                                                <?php if (!empty($commissioner['token'])): ?>
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-circle me-1"></i>Token Active
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary">
+                                                        <i class="bi bi-dash-circle me-1"></i>No Token
+                                                    </span>
+                                                <?php endif; ?>
                                             </div>
-                                            <div class="text-end">
-                                                <code class="bg-light px-2 py-1 rounded"><?php echo htmlspecialchars($commissioner['token']); ?></code>
-                                                <div class="mt-2">
-                                                    <form method="POST" class="d-inline">
+                                            <!-- Actions -->
+                                            <div class="d-flex gap-1 justify-content-end">
+                                                <form method="POST" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                                    <input type="hidden" name="commissioner_id" value="<?php echo (int)$commissioner['id']; ?>">
+                                                    <input type="hidden" name="action" value="generate_commissioner_token">
+                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-arrow-repeat me-1"></i>Generate New Token
+                                                    </button>
+                                                </form>
+
+                                                <?php if (!empty($commissioner['token'])): ?>
+                                                    <form method="POST" class="d-inline" onsubmit="return confirm('Clear this token?');">
                                                         <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                                         <input type="hidden" name="commissioner_id" value="<?php echo (int)$commissioner['id']; ?>">
-                                                        <input type="hidden" name="action" value="generate_commissioner_token">
-                                                        <button type="submit" class="btn btn-sm btn-primary">Generate</button>
+                                                        <input type="hidden" name="action" value="clear_commissioner_token">
+                                                        <button type="submit" class="btn btn-sm btn-warning">
+                                                            <i class="bi bi-x-circle me-1"></i>Clear Token
+                                                        </button>
                                                     </form>
-
-                                                    <?php if (!empty($commissioner['token'])): ?>
-                                                        <form method="POST" class="d-inline ms-2" onsubmit="return confirm('Clear this token?');">
-                                                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                                            <input type="hidden" name="commissioner_id" value="<?php echo (int)$commissioner['id']; ?>">
-                                                            <input type="hidden" name="action" value="clear_commissioner_token">
-                                                            <button type="submit" class="btn btn-sm btn-warning">Clear</button>
-                                                        </form>
-                                                    <?php endif; ?>
-                                                </div>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="alert alert-warning">
-                                    No commissioners found in the database.
                                 </div>
-                            <?php endif; ?>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="alert alert-warning">
+                                No commissioners found in the database.
+                            </div>
+                        <?php endif; ?>
+                </div><!-- /#commissionerTokensSection -->
                         </div>
                     </div>
             </div>
@@ -411,6 +456,58 @@ include '../includes/admin_sidebar.php';
                 confirmResetInput.value = '';
             }
         });
+    }
+
+    // ── Print commissioner tokens ───────────────────────────────────────
+    function printCommissioners() {
+        var rows = document.querySelectorAll('.commissioner-row');
+        var html = '<!DOCTYPE html><html><head><title>Commissioner Tokens</title>';
+        html += '<style>';
+        html += 'body{font-family:Arial,sans-serif;padding:30px;color:#222;}';
+        html += 'h2{text-align:center;margin-bottom:8px;}';
+        html += '.subtitle{text-align:center;color:#666;margin-bottom:28px;font-size:.9rem;}';
+        html += '.token-row{border:1px solid #ccc;border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}';
+        html += '.comm-name{font-weight:bold;font-size:1.05rem;}';
+        html += '.comm-type{color:#666;font-size:.9rem;margin-top:2px;}';
+        html += '.token-val{font-family:monospace;font-size:1.1rem;background:#f4f4f4;padding:8px 16px;border-radius:4px;letter-spacing:3px;border:1px solid #ddd;}';
+        html += '.no-token{color:#aaa;font-style:italic;}';
+        html += '.footer{text-align:center;margin-top:30px;font-size:.8rem;color:#888;border-top:1px solid #eee;padding-top:12px;}';
+        html += '@media print{body{padding:10px;}}';
+        html += '</style></head><body>';
+        html += '<h2>Commission Tokens</h2>';
+        html += '<p class="subtitle">Printed: ' + new Date().toLocaleString() + '</p>';
+
+        rows.forEach(function (row) {
+            var name  = row.dataset.name  || '—';
+            var type  = row.dataset.type  || '';
+            var token = row.dataset.token || '';
+
+            html += '<div class="token-row">';
+            html += '<div><div class="comm-name">' + escHtml(name) + '</div><div class="comm-type">' + escHtml(type) + ' Commissioner</div></div>';
+            if (token) {
+                html += '<div class="token-val">' + escHtml(token) + '</div>';
+            } else {
+                html += '<div class="no-token">(no token generated)</div>';
+            }
+            html += '</div>';
+        });
+
+        html += '<div class="footer">⚠ Keep this document confidential. Do not share tokens with unauthorized persons.</div>';
+        html += '</body></html>';
+
+        var win = window.open('', '_blank', 'width=720,height=520');
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+        win.print();
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 </script>
 

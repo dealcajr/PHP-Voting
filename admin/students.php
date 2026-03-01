@@ -126,6 +126,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
+// Handle bulk actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $message = '<div class="alert alert-danger">Invalid request.</div>';
+    } else {
+        $bulk_action = $_POST['bulk_action'];
+        $selected_ids = $_POST['selected_ids'] ?? [];
+
+        // Sanitize: keep only integers
+        $selected_ids = array_filter(array_map('intval', $selected_ids));
+
+        if (empty($selected_ids)) {
+            $message = '<div class="alert alert-warning">No students selected.</div>';
+        } else {
+            $placeholders = implode(',', array_fill(0, count($selected_ids), '?'));
+            try {
+                if ($bulk_action === 'bulk_activate') {
+                    $db->prepare("UPDATE users SET is_active = 1 WHERE id IN ($placeholders) AND role = 'voter'")->execute($selected_ids);
+                    logAdminAction('bulk_activate', "Bulk activated " . count($selected_ids) . " students");
+                    $message = '<div class="alert alert-success">Selected students activated successfully.</div>';
+                } elseif ($bulk_action === 'bulk_delete') {
+                    // Only delete voters, never admins
+                    $db->prepare("DELETE FROM users WHERE id IN ($placeholders) AND role = 'voter'")->execute($selected_ids);
+                    logAdminAction('bulk_delete', "Bulk deleted " . count($selected_ids) . " students");
+                    $message = '<div class="alert alert-success">Selected students deleted successfully.</div>';
+                }
+            } catch (PDOException $e) {
+                $message = '<div class="alert alert-danger">Database error: ' . $e->getMessage() . '</div>';
+            }
+        }
+    }
+}
+
 // Get all students (excluding admins)
 $filter_grade = $_GET['filter_grade'] ?? '';
 $filter_section = $_GET['filter_section'] ?? '';
@@ -285,69 +318,150 @@ include '../includes/admin_sidebar.php';
     </div>
 
     <!-- Students Table -->
-    <div class="card">
-        <div class="card-header">
-            <h4>Students (<?php echo $total_students; ?>)</h4>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Student ID</th>
-                            <th>LRN</th>
-                            <th>Name</th>
-                            <th>Grade & Section</th>
-                            <th>Voter ID</th>
-                            <th>Vote Status</th>
-                            <th>Account Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($students as $student): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($student['student_id']); ?></td>
-                                <td><?php echo htmlspecialchars($student['lrn'] ?? ''); ?></td>
-                                <td><?php echo htmlspecialchars($student['last_name'] . ', ' . $student['first_name']); ?></td>
-                                <td><?php echo htmlspecialchars('Grade ' . $student['grade'] . '-' . $student['section']); ?></td>
-                                <td><code><?php echo htmlspecialchars($student['voter_id_card']); ?></code></td>
-                                <td>
-                                    <span class="badge <?php echo $student['has_voted'] ? 'bg-success' : 'bg-warning'; ?>">
-                                        <?php echo $student['has_voted'] ? 'VOTED' : 'NOT VOTE'; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge <?php echo $student['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
-                                        <?php echo $student['is_active'] ? 'ACTIVATED' : 'NOT ACTIVATED'; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <?php if (!$student['is_active']): ?>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to activate this student account?')">
-                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                                <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
-                                                <input type="hidden" name="action" value="activate">
-                                                <button type="submit" class="btn btn-outline-success btn-sm">Activate</button>
-                                            </form>
-                                        <?php endif; ?>
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this student? This action cannot be undone.')">
-                                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                            <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
-                                            <input type="hidden" name="action" value="delete">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+    <form method="POST" id="bulkForm">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+        <input type="hidden" name="bulk_action" id="bulkActionInput" value="">
+
+        <!-- Bulk Action Toolbar (hidden until rows are selected) -->
+        <div id="bulkToolbar" class="card mb-3 border-primary d-none">
+            <div class="card-body py-2 d-flex align-items-center gap-3 flex-wrap">
+                <span id="selectedCount" class="fw-bold text-primary">0 selected</span>
+                <button type="button" class="btn btn-success btn-sm" onclick="submitBulkAction('bulk_activate')">
+                    <i class="bi bi-check-circle me-1"></i> Activate Selected
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="submitBulkAction('bulk_delete')">
+                    <i class="bi bi-trash me-1"></i> Delete Selected
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+                    <i class="bi bi-x-circle me-1"></i> Clear Selection
+                </button>
             </div>
         </div>
-    </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Students (<?php echo $total_students; ?>)</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="studentsTable">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">
+                                    <input type="checkbox" id="selectAll" class="form-check-input" title="Select All">
+                                </th>
+                                <th>Student ID</th>
+                                <th>LRN</th>
+                                <th>Name</th>
+                                <th>Grade & Section</th>
+                                <th>Voter ID</th>
+                                <th>Vote Status</th>
+                                <th>Account Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($students as $student): ?>
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="selected_ids[]" value="<?php echo $student['id']; ?>" class="form-check-input row-checkbox">
+                                    </td>
+                                    <td><?php echo htmlspecialchars($student['student_id']); ?></td>
+                                    <td><?php echo htmlspecialchars($student['lrn'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($student['last_name'] . ', ' . $student['first_name']); ?></td>
+                                    <td><?php echo htmlspecialchars('Grade ' . $student['grade'] . '-' . $student['section']); ?></td>
+                                    <td><code><?php echo htmlspecialchars($student['voter_id_card']); ?></code></td>
+                                    <td>
+                                        <span class="badge <?php echo $student['has_voted'] ? 'bg-success' : 'bg-warning'; ?>">
+                                            <?php echo $student['has_voted'] ? 'VOTED' : 'NOT VOTE'; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge <?php echo $student['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
+                                            <?php echo $student['is_active'] ? 'ACTIVATED' : 'NOT ACTIVATED'; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <?php if (!$student['is_active']): ?>
+                                                <form method="POST" class="d-inline" data-no-transition onsubmit="return confirm('Are you sure you want to activate this student account?')">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                                    <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
+                                                    <input type="hidden" name="action" value="activate">
+                                                    <button type="submit" class="btn btn-outline-success btn-sm">Activate</button>
+                                                </form>
+                                            <?php endif; ?>
+                                            <form method="POST" class="d-inline" data-no-transition onsubmit="return confirm('Are you sure you want to delete this student? This action cannot be undone.')">
+                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                                <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
+                                                <input type="hidden" name="action" value="delete">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
+
+<script>
+(function () {
+    var selectAll = document.getElementById('selectAll');
+    var bulkToolbar = document.getElementById('bulkToolbar');
+    var selectedCount = document.getElementById('selectedCount');
+
+    function getCheckboxes() {
+        return document.querySelectorAll('.row-checkbox');
+    }
+
+    function updateToolbar() {
+        var checked = document.querySelectorAll('.row-checkbox:checked');
+        var count = checked.length;
+        if (count > 0) {
+            bulkToolbar.classList.remove('d-none');
+            selectedCount.textContent = count + ' student' + (count !== 1 ? 's' : '') + ' selected';
+        } else {
+            bulkToolbar.classList.add('d-none');
+        }
+        // Update select-all state
+        var all = getCheckboxes();
+        selectAll.indeterminate = count > 0 && count < all.length;
+        selectAll.checked = all.length > 0 && count === all.length;
+    }
+
+    selectAll.addEventListener('change', function () {
+        getCheckboxes().forEach(function (cb) { cb.checked = selectAll.checked; });
+        updateToolbar();
+    });
+
+    document.getElementById('studentsTable').addEventListener('change', function (e) {
+        if (e.target.classList.contains('row-checkbox')) updateToolbar();
+    });
+
+    window.submitBulkAction = function (action) {
+        var checked = document.querySelectorAll('.row-checkbox:checked');
+        if (checked.length === 0) { alert('Please select at least one student.'); return; }
+        var label = action === 'bulk_delete'
+            ? 'delete ' + checked.length + ' student(s)? This cannot be undone.'
+            : 'activate ' + checked.length + ' student(s)?';
+        if (!confirm('Are you sure you want to ' + label)) return;
+        document.getElementById('bulkActionInput').value = action;
+        document.getElementById('bulkForm').submit();
+    };
+
+    window.clearSelection = function () {
+        getCheckboxes().forEach(function (cb) { cb.checked = false; });
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+        bulkToolbar.classList.add('d-none');
+    };
+})();
+</script>
 
 <!-- Import CSV Modal -->
 <div class="modal fade" id="importModal" tabindex="-1">

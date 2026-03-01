@@ -9,6 +9,12 @@ if (!isset($_SESSION['user_id'])) {
 
 $db = getDBConnection();
 
+// Get school info and logo
+$stmt_school = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");
+$school_info = $stmt_school ? $stmt_school->fetch() : null;
+$school_name = $school_info['school_name'] ?? APP_NAME;
+$school_logo_path = $school_info['logo_path'] ?? 'admin/assets/images/logo_1770187955.png';
+
 // Get election settings
 $election = $db->query("SELECT * FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
 
@@ -88,7 +94,10 @@ if ($show_results) {
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#"><?php echo APP_NAME; ?></a>
+            <?php if ($school_logo_path): ?>
+                <img src="<?php echo htmlspecialchars($school_logo_path); ?>" alt="School Logo" style="max-height: 40px; margin-right: 15px; object-fit: contain;">
+            <?php endif; ?>
+            <a class="navbar-brand" href="#"><?php echo htmlspecialchars($school_name); ?></a>
             <div class="navbar-nav ms-auto">
                 <?php if ($_SESSION['role'] === 'admin'): ?>
                     <a class="nav-link" href="admin/index.php">Admin Dashboard</a>
@@ -154,6 +163,7 @@ if ($show_results) {
                         <!-- Chart for this position -->
                         <canvas id="chart-<?php echo md5($position); ?>" width="400" height="200"></canvas>
                         <script>
+                            /*global Chart */
                             const ctx<?php echo md5($position); ?> = document.getElementById('chart-<?php echo md5($position); ?>');
                             new Chart(ctx<?php echo md5($position); ?>, {
                                 type: 'bar',

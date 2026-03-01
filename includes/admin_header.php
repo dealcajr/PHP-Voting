@@ -242,12 +242,28 @@
 </head>
 <body>
     <header class="admin-header">
-        <div class="container-fluid d-flex justify-content-between align-items-center">
-            <div>
-                <a class="navbar-brand" href="index.php"><?php echo SCHOOL_NAME; ?></a>
-                <h6 style="margin: 0; color: #adb5bd;">SSLG Voting System - Admin</h6>
+        <div class="container-fluid">
+            <div class="row align-items-center mb-3">
+                <div class="col-auto">
+                    <?php
+                    try {
+                        $db = getDBConnection();
+                        $result = $db->query("SELECT logo_path FROM school_info LIMIT 1");
+                        $school_info = $result ? $result->fetch() : null;
+                        $logo = $school_info['logo_path'] ?? null;
+                        if ($logo): ?>
+                            <img src="<?php echo htmlspecialchars($logo); ?>" alt="School Logo" style="max-height: 60px; object-fit: contain;">
+                        <?php endif;
+                    } catch (Exception $e) {
+                        // Logo retrieval failed, continue without it
+                    }
+                    ?>
+                </div>
+                <div class="col">
+                    <a class="navbar-brand" href="index.php" style="margin: 0;"><?php echo SCHOOL_NAME; ?></a>
+                    <h6 style="margin: 0; color: #adb5bd;">SSLG Voting System - Admin</h6>
+                </div>
             </div>
-            
         </div>
     </header>
     <div class="admin-wrapper">

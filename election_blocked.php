@@ -1,10 +1,12 @@
 <?php
 require_once 'includes/config.php';
 
-// Get school name
+// Get school name and logo
 $db = getDBConnection();
-$stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
-$school_name = $stmt->fetchColumn();
+$stmt = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");
+$school_info = $stmt->fetch();
+$school_name = $school_info['school_name'] ?? APP_NAME;
+$school_logo_path = $school_info['logo_path'] ?? null;
 $election = getElectionStatus();
 ?>
 <!DOCTYPE html>
@@ -41,10 +43,17 @@ $election = getElectionStatus();
             margin-bottom: 1rem;
             font-weight: bold;
         }
-        .blocked-message {
-            color: #718096;
-            line-height: 1.6;
-            margin-bottom: 2rem;
+        .block-card-logo {
+            margin-bottom: 1.5rem;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .block-card-logo img {
+            max-height: 100px;
+            max-width: 150px;
+            object-fit: contain;
         }
         .blocked-action {
             background: linear-gradient(135deg, #667eea, #764ba2);

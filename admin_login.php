@@ -51,10 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get school name
+// Get school name and logo
 $db = getDBConnection();
-$stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
-$school_name = $stmt->fetchColumn();
+$stmt = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");
+$school_info = $stmt->fetch();
+$school_name = $school_info['school_name'] ?? null;
+$school_logo_path = $school_info['logo_path'] ?? 'admin/assets/images/logo_1770187955.png';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -64,11 +66,31 @@ $school_name = $stmt->fetchColumn();
     <title><?php echo $school_name ?? APP_NAME; ?> - Admin Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
+    <style>
+        .logo-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            min-height: 100px;
+        }
+        .logo-wrapper img {
+            max-width: 120px;
+            max-height: 120px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-card">
             <div class="login-branding">
+                <?php if ($school_logo_path): ?>
+                    <div class="logo-wrapper">
+                        <img src="<?php echo htmlspecialchars($school_logo_path); ?>" alt="School Logo">
+                    </div>
+                <?php endif; ?>
                 <h1><?php echo htmlspecialchars($school_name ?? APP_NAME); ?></h1>
                 <p class="lead">Administrator Access</p>
             </div>

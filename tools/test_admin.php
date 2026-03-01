@@ -72,8 +72,9 @@ if (!empty($election['election_token'])) {
     echo "❌ Election token generation failed\n";
 }
 
-// Test election opening
-echo "\n--- Testing Election Opening ---\n";
+// Test election opening without token requirement
+echo "\n--- Testing Election Opening (no tokens required) ---\n";
+$db->exec("UPDATE election_settings SET is_open = 0, require_open_tokens = 0 WHERE id = 1");
 $_POST = [
     'csrf_token' => generateCSRFToken(),
     'action' => 'open_election'
@@ -85,9 +86,71 @@ $content = ob_get_clean();
 
 $election = $db->query("SELECT * FROM election_settings LIMIT 1")->fetch();
 if ($election['is_open']) {
-    echo "✅ Election opening successful\n";
+    echo "✅ Election opened without tokens\n";
 } else {
-    echo "❌ Election opening failed\n";
+    echo "❌ Election opening without tokens failed\n";
+}
+
+// Now test behavior when tokens are required
+echo "\n--- Testing Election Opening (tokens required) ---\n";
+// Ensure election closed and requirement enabled
+$db->exec("UPDATE election_settings SET is_open = 0, require_open_tokens = 1 WHERE id = 1");
+// prepare commissioners
+$db->exec("DELETE FROM commissioners");
+$db->exec("INSERT INTO commissioners (commission_type, name, token, is_active) VALUES
+    ('chief','Chief','AAA',1),
+    ('screening','Screen','BBB',1),
+    ('electoral','Elect','CCC',1)");
+
+// attempt without tokens
+$_POST = [
+    'csrf_token' => generateCSRFToken(),
+    'action' => 'open_election'
+];
+ob_start();
+include 'admin/election.php';
+$content = ob_get_clean();
+$election = $db->query("SELECT * FROM election_settings LIMIT 1")->fetch();
+if (!$election['is_open']) {
+    echo "✅ Opening blocked without tokens\n";
+} else {
+    echo "❌ Opening should have been blocked but wasn't\n";
+}
+
+// now with wrong tokens
+$_POST = [
+    'csrf_token' => generateCSRFToken(),
+    'action' => 'open_election',
+    'token_chief' => 'wrong',
+    'token_screening' => 'wrong',
+    'token_electoral' => 'wrong'
+];
+ob_start();
+include 'admin/election.php';
+$content = ob_get_clean();
+$election = $db->query("SELECT * FROM election_settings LIMIT 1")->fetch();
+if (!$election['is_open']) {
+    echo "✅ Opening blocked with invalid tokens\n";
+} else {
+    echo "❌ Invalid tokens should not open election\n";
+}
+
+// now with correct tokens
+$_POST = [
+    'csrf_token' => generateCSRFToken(),
+    'action' => 'open_election',
+    'token_chief' => 'AAA',
+    'token_screening' => 'BBB',
+    'token_electoral' => 'CCC'
+];
+ob_start();
+include 'admin/election.php';
+$content = ob_get_clean();
+$election = $db->query("SELECT * FROM election_settings LIMIT 1")->fetch();
+if ($election['is_open']) {
+    echo "✅ Election opened with valid tokens\n";
+} else {
+    echo "❌ Election failed to open with valid tokens\n";
 }
 
 echo "\n🎉 Admin function tests completed!\n";

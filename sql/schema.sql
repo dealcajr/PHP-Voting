@@ -77,6 +77,7 @@ CREATE TABLE `election_settings` (
   `election_name` varchar(100) NOT NULL DEFAULT 'SSLG Election',
   `election_token` varchar(64) DEFAULT NULL,
   `is_open` tinyint(1) NOT NULL DEFAULT 0,
+  `require_open_tokens` tinyint(1) NOT NULL DEFAULT 0,
   `start_date` datetime DEFAULT NULL,
   `end_date` datetime DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),

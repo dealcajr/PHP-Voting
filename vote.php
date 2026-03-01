@@ -163,6 +163,12 @@ if ($positions) {
     }
 }
 
+// Get school info and logo
+$stmt_school = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");
+$school_info = $stmt_school ? $stmt_school->fetch() : null;
+$school_name = $school_info['school_name'] ?? APP_NAME;
+$school_logo_path = $school_info['logo_path'] ?? 'admin/assets/images/logo_1770187955.png';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -172,13 +178,32 @@ if ($positions) {
     <title><?php echo APP_NAME; ?> - Vote</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
+    <style>
+        .navbar-logo {
+            max-height: 40px;
+            margin-right: 15px;
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <?php if ($school_logo_path): ?>
+                <img src="<?php echo htmlspecialchars($school_logo_path); ?>" alt="School Logo" class="navbar-logo">
+            <?php endif; ?>
+            <span class="navbar-text text-light"><strong><?php echo htmlspecialchars($school_name); ?> - Cast Your Vote</strong></span>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="results.php">View Results</a>
+                <a class="nav-link" href="logout.php">Logout</a>
+            </div>
+        </div>
+    </nav>
     <div class="container mt-5">
         <div class="row">
             <div class="col-lg-8">
-                <h1>Cast Your Vote</h1>
-                <p class="lead"><?php echo htmlspecialchars($election['election_name'] ?? 'SSLG Election'); ?></p>
+                <h1><?php echo htmlspecialchars($election['election_name'] ?? 'Cast Your Vote'); ?></h1>
+                <p class="lead">Vote for your candidates</p>
 
                 <?php echo $message; ?>
 

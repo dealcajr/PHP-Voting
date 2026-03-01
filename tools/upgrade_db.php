@@ -11,7 +11,8 @@ try {
         ADD COLUMN allowed_ips TEXT NULL DEFAULT NULL,
         ADD COLUMN chief_commissioner_token VARCHAR(255) NULL DEFAULT NULL,
         ADD COLUMN screening_validation_token VARCHAR(255) NULL DEFAULT NULL,
-        ADD COLUMN electoral_board_token VARCHAR(255) NULL DEFAULT NULL");
+        ADD COLUMN electoral_board_token VARCHAR(255) NULL DEFAULT NULL,
+        ADD COLUMN require_open_tokens TINYINT(1) NOT NULL DEFAULT 0");
 
     // Create commissioner_logins table
     $db->exec("CREATE TABLE IF NOT EXISTS commissioner_logins (

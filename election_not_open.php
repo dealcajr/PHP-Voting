@@ -1,10 +1,12 @@
 <?php
 require_once 'includes/config.php';
 
-// Get school name
+// Get school name and logo
 $db = getDBConnection();
-$stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
-$school_name = $stmt->fetchColumn();
+$stmt = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");
+$school_info = $stmt->fetch();
+$school_name = $school_info['school_name'] ?? APP_NAME;
+$school_logo_path = $school_info['logo_path'] ?? 'admin/assets/images/logo_1770187955.png';
 $election = getElectionStatus();
 ?>
 <!DOCTYPE html>
@@ -30,6 +32,18 @@ $election = getElectionStatus();
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             max-width: 600px;
             text-align: center;
+        }
+        .logo-container {
+            margin-bottom: 1.5rem;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo-container img {
+            max-height: 100px;
+            max-width: 150px;
+            object-fit: contain;
         }
         .blocked-icon {
             font-size: 4rem;

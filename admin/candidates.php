@@ -97,13 +97,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-// Get candidates
-$candidates = $db->query("SELECT * FROM candidates ORDER BY position, name")->fetchAll();
+// Get candidates with filters
+$filter_position = $_GET['filter_position'] ?? '';
+$filter_grade = $_GET['filter_grade'] ?? '';
+$filter_party = $_GET['filter_party'] ?? '';
+$search_query = $_GET['search'] ?? '';
 
-// Get positions for dropdown
-$positions = $db->query("SELECT DISTINCT position FROM candidates WHERE position IS NOT NULL AND position != '' ORDER BY position")->fetchAll(PDO::FETCH_COLUMN);
+$query = "SELECT * FROM candidates WHERE 1=1";
+$params = [];
+
+// Apply filters
+if (!empty($filter_position)) {
+    $query .= " AND position = ?";
+    $params[] = $filter_position;
+}
+
+if (!empty($filter_grade)) {
+    $query .= " AND grade = ?";
+    $params[] = $filter_grade;
+}
+
+if (!empty($filter_party)) {
+    $query .= " AND party = ?";
+    $params[] = $filter_party;
+}
+
+if (!empty($search_query)) {
+    $query .= " AND (name LIKE ? OR section LIKE ?)";
+    $search_param = '%' . $search_query . '%';
+    $params = array_merge($params, [$search_param, $search_param]);
+}
+
+$query .= " ORDER BY position, name";
+
+$stmt = $db->prepare($query);
+$stmt->execute($params);
+$candidates = $stmt->fetchAll();
+
+// Get all distinct values for filter dropdowns
+$all_positions = $db->query("SELECT DISTINCT position FROM candidates WHERE position IS NOT NULL AND position != '' ORDER BY position")->fetchAll(PDO::FETCH_COLUMN);
 $default_positions = ['President', 'Junior High School Vice President', 'Senior High School Vice President', 'Secretary', 'Treasurer', 'Auditor', 'Public Information Officer', 'Grade 8 Representative', 'Grade 9 Representative', 'Grade 10 Representative', 'Grade 11 Representative', 'Grade 12 Representative'];
-$positions = array_unique(array_merge($default_positions, $positions));
+$all_positions = array_unique(array_merge($default_positions, $all_positions));
+
+$all_grades = $db->query("SELECT DISTINCT grade FROM candidates ORDER BY CAST(grade AS UNSIGNED)")->fetchAll(PDO::FETCH_COLUMN);
+
+$all_parties = $db->query("SELECT DISTINCT party FROM candidates WHERE party IS NOT NULL AND party != '' ORDER BY party")->fetchAll(PDO::FETCH_COLUMN);
 
 include '../includes/admin_header.php';
 include '../includes/admin_sidebar.php';
@@ -113,6 +151,53 @@ include '../includes/admin_sidebar.php';
     <h1 class="mb-4">Candidate Management</h1>
 
     <?php echo $message; ?>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="Candidate name" value="<?php echo htmlspecialchars($search_query); ?>">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_position" class="form-label">Position</label>
+                    <select class="form-select" id="filter_position" name="filter_position">
+                        <option value="">All Positions</option>
+                        <?php foreach ($all_positions as $position): ?>
+                            <option value="<?php echo htmlspecialchars($position); ?>" <?php echo $filter_position === $position ? 'selected' : ''; ?>><?php echo htmlspecialchars($position); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_grade" class="form-label">Grade</label>
+                    <select class="form-select" id="filter_grade" name="filter_grade">
+                        <option value="">All Grades</option>
+                        <?php foreach ($all_grades as $grade): ?>
+                            <option value="<?php echo htmlspecialchars($grade); ?>" <?php echo $filter_grade === $grade ? 'selected' : ''; ?>>Grade <?php echo htmlspecialchars($grade); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_party" class="form-label">Party</label>
+                    <select class="form-select" id="filter_party" name="filter_party">
+                        <option value="">All Parties</option>
+                        <option value="Independent" <?php echo $filter_party === 'Independent' ? 'selected' : ''; ?>>Independent</option>
+                        <?php foreach ($all_parties as $party): ?>
+                            <option value="<?php echo htmlspecialchars($party); ?>" <?php echo $filter_party === $party ? 'selected' : ''; ?>><?php echo htmlspecialchars($party); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Apply Filters</button>
+                    <a href="candidates.php" class="btn btn-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Candidates Table -->
     <div class="card">

@@ -22,12 +22,12 @@ $db = getDBConnection();
 $stmt = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");
 $school_info = $stmt->fetch();
 $school_name = $school_info['school_name'] ?? APP_NAME;
-$school_logo_path = $school_info['logo_path'] ?? null;
+$school_logo_path = $school_info['logo_path'] ?? 'admin/assets/images/logo_1770187955.png';
 
 // Get theme settings
-$election = $db->query("SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$election = $db->query("SELECT theme_color FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
 $theme_color = $election['theme_color'] ?? '#343a40';
-$logo_path = $election['logo_path'] ?? 'assets/images/logo_1770105233.png';
+$logo_path = $school_logo_path;
 
 ?>
 <!DOCTYPE html>

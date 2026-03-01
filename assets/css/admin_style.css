@@ -1,7 +1,7 @@
 /* Basic Admin Styles */
 :root {
     --bg-color: #ffffff;
-    --text-color: #ffffff;
+    --text-color: #2b2828;
     --card-bg: #fff;
     --card-border: #dee2e6;
     --sidebar-bg: #343a40;
@@ -41,23 +41,23 @@ body {
 
 .admin-sidebar {
     width: 60px;
-    height: flex;
+    height: auto;
     background-color: var(--sidebar-bg);
     padding: 20px 10px;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--card-border);
+    border-right: 2px solid var(--card-border);
     transition: width 0.3s;
     overflow: hidden;
 }
 .admin-sidebar:hover,
 .admin-sidebar.expanded {
-    width: 220px;
+    width: 230px;
 }
 .admin-sidebar .nav-link {
     display: flex;
     align-items: center;
-    padding: 8px 10px;
+    padding: 10px 10px;
 }
 .admin-sidebar .nav-link .link-text {
     margin-left: 10px;

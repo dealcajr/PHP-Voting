@@ -71,6 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_control']))
 $total_voters = $db->query("SELECT COUNT(*) FROM users WHERE role = 'voter' AND is_active = 1")->fetchColumn();
 $votes_cast = $db->query("SELECT COUNT(DISTINCT voter_id) FROM votes")->fetchColumn();
 $completion_rate = $total_voters > 0 ? round(($votes_cast / $total_voters) * 100, 1) : 0;
+
+// Get school info and logo
+$school_stmt = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");
+$school_info = $school_stmt ? $school_stmt->fetch() : null;
+$school_name = $school_info['school_name'] ?? APP_NAME;
+$school_logo_path = $school_info['logo_path'] ?? 'admin/assets/images/logo_1770187955.png';
 ?>
 
 <!DOCTYPE html>
@@ -81,11 +87,21 @@ $completion_rate = $total_voters > 0 ? round(($votes_cast / $total_voters) * 100
     <title><?php echo APP_NAME; ?> - Voting Control</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
+    <style>
+        .navbar-logo {
+            max-height: 40px;
+            margin-right: 15px;
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="index.php"><?php echo APP_NAME; ?> - Voting Control</a>
+            <?php if ($school_logo_path): ?>
+                <img src="<?php echo htmlspecialchars($school_logo_path); ?>" alt="School Logo" class="navbar-logo">
+            <?php endif; ?>
+            <a class="navbar-brand" href="index.php"><?php echo $school_name; ?> - Voting Control</a>
         </div>
     </nav>
 

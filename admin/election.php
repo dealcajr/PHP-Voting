@@ -175,6 +175,12 @@ include '../includes/admin_sidebar.php';
                                     </div>
                                 </div>
                             </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="require_open_tokens" name="require_open_tokens" value="1" <?php echo !empty($election['require_open_tokens']) ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="require_open_tokens">
+                                    Require commissioner tokens to open election
+                                </label>
+                            </div>
                             <button type="submit" class="btn btn-primary">Update Settings</button>
                         </form>
                     </div>
@@ -192,6 +198,9 @@ include '../includes/admin_sidebar.php';
                             <?php
                             $commissioners = $db->query("SELECT id, commission_type, name, token, is_active FROM commissioners ORDER BY commission_type")->fetchAll(PDO::FETCH_ASSOC);
                             ?>
+
+                <!-- Election Reports (moved to right column) -->
+                <!-- originally placed here but relocated below to maintain two-column layout -->
                             <?php if (!empty($commissioners)): ?>
                                 <?php foreach ($commissioners as $commissioner): ?>
                                     <div class="mb-3 p-3 border rounded">
@@ -251,9 +260,34 @@ include '../includes/admin_sidebar.php';
                             <form method="POST" class="d-inline">
                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                 <input type="hidden" name="action" value="open_election">
+
+                                <?php if (!empty($election['require_open_tokens'])): ?>
+                                    <div class="mb-2 text-start">
+                                        <small class="text-muted">Enter commissioner tokens to open:</small>
+                                        <input type="password" class="form-control mb-1" name="token_chief" placeholder="Chief Commissioner token" required>
+                                        <input type="password" class="form-control mb-1" name="token_screening" placeholder="Screening &amp; Validation token" required>
+                                        <input type="password" class="form-control" name="token_electoral" placeholder="Electoral Board token" required>
+                                    </div>
+                                <?php endif; ?>
+
                                 <button type="submit" class="btn btn-success w-100 mb-2">Open Election</button>
                             </form>
                         <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Election Reports moved here -->
+                <div class="card mb-4" id="reportsCard">
+                    <div class="card-header">
+                        <h4>Election Reports</h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">Generate printable reports for the election.</p>
+                        <a href="print_winners_report.php" class="btn btn-primary mb-2">Print Winners Report</a>
+                        <a href="print_candidates_report.php" class="btn btn-secondary mb-2">Print Candidate Report</a>
+                        <a href="backup_votes.php" class="btn btn-warning mb-2">Backup Votes</a>
+                    </div>
+                </div>
 
                         <button type="button" class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#resetModal">
                             Reset Election Data

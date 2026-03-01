@@ -127,12 +127,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // Get all students (excluding admins)
-$students = $db->query("SELECT * FROM users WHERE role = 'voter' ORDER BY grade, section, last_name, first_name")->fetchAll();
+$filter_grade = $_GET['filter_grade'] ?? '';
+$filter_section = $_GET['filter_section'] ?? '';
+$filter_status = $_GET['filter_status'] ?? '';
+$filter_active = $_GET['filter_active'] ?? '';
+$search_query = $_GET['search'] ?? '';
+
+$query = "SELECT u.*, CASE WHEN v.id IS NOT NULL THEN 1 ELSE 0 END as has_voted FROM users u LEFT JOIN votes v ON u.id = v.voter_id WHERE u.role = 'voter'";
+$params = [];
+
+// Apply filters
+if (!empty($filter_grade)) {
+    $query .= " AND u.grade = ?";
+    $params[] = $filter_grade;
+}
+
+if (!empty($filter_section)) {
+    $query .= " AND u.section = ?";
+    $params[] = $filter_section;
+}
+
+if ($filter_status === 'voted') {
+    $query .= " AND v.id IS NOT NULL";
+} elseif ($filter_status === 'not_voted') {
+    $query .= " AND v.id IS NULL";
+}
+
+if ($filter_active === 'active') {
+    $query .= " AND u.is_active = 1";
+} elseif ($filter_active === 'inactive') {
+    $query .= " AND u.is_active = 0";
+}
+
+if (!empty($search_query)) {
+    $query .= " AND (u.student_id LIKE ? OR u.lrn LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)";
+    $search_param = '%' . $search_query . '%';
+    $params = array_merge($params, [$search_param, $search_param, $search_param, $search_param]);
+}
+
+$query .= " GROUP BY u.id ORDER BY u.grade, u.section, u.last_name, u.first_name";
+
+$stmt = $db->prepare($query);
+$stmt->execute($params);
+$students = $stmt->fetchAll();
+
+// Get all grades and sections for filter dropdowns
+$grades_query = "SELECT DISTINCT grade FROM users WHERE role = 'voter' ORDER BY CAST(grade AS UNSIGNED)";
+$all_grades = $db->query($grades_query)->fetchAll(PDO::FETCH_COLUMN);
+
+$sections_query = "SELECT DISTINCT section FROM users WHERE role = 'voter' ORDER BY section";
+$all_sections = $db->query($sections_query)->fetchAll(PDO::FETCH_COLUMN);
 
 // Get statistics
 $total_students = count($students);
-$active_students = count(array_filter($students, fn($s) => $s['is_active']));
-$inactive_students = $total_students - $active_students;
+$voted_students = count(array_filter($students, fn($s) => $s['has_voted']));
+$not_voted_students = $total_students - $voted_students;
+
+// Get total stats (all students, not just filtered)
+$all_students_query = $db->query("SELECT COUNT(DISTINCT u.id) as total, COUNT(DISTINCT v.voter_id) as voted FROM users u LEFT JOIN votes v ON u.id = v.voter_id WHERE u.role = 'voter'")->fetch();
+$all_total = $all_students_query['total'];
+$all_voted = $all_students_query['voted'];
+$all_not_voted = $all_total - $all_voted;
 
 include '../includes/admin_header.php';
 include '../includes/admin_sidebar.php';
@@ -148,12 +203,65 @@ include '../includes/admin_sidebar.php';
 
     <?php echo $message; ?>
 
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="Student ID, LRN, or Name" value="<?php echo htmlspecialchars($search_query); ?>">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_grade" class="form-label">Grade</label>
+                    <select class="form-select" id="filter_grade" name="filter_grade">
+                        <option value="">All Grades</option>
+                        <?php foreach ($all_grades as $grade): ?>
+                            <option value="<?php echo htmlspecialchars($grade); ?>" <?php echo $filter_grade === $grade ? 'selected' : ''; ?>>Grade <?php echo htmlspecialchars($grade); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_section" class="form-label">Section</label>
+                    <select class="form-select" id="filter_section" name="filter_section">
+                        <option value="">All Sections</option>
+                        <?php foreach ($all_sections as $section): ?>
+                            <option value="<?php echo htmlspecialchars($section); ?>" <?php echo $filter_section === $section ? 'selected' : ''; ?>><?php echo htmlspecialchars($section); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_status" class="form-label">Vote Status</label>
+                    <select class="form-select" id="filter_status" name="filter_status">
+                        <option value="">All Status</option>
+                        <option value="voted" <?php echo $filter_status === 'voted' ? 'selected' : ''; ?>>Voted</option>
+                        <option value="not_voted" <?php echo $filter_status === 'not_voted' ? 'selected' : ''; ?>>Not Voted</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter_active" class="form-label">Account Status</label>
+                    <select class="form-select" id="filter_active" name="filter_active">
+                        <option value="">All Accounts</option>
+                        <option value="active" <?php echo $filter_active === 'active' ? 'selected' : ''; ?>>Activated</option>
+                        <option value="inactive" <?php echo $filter_active === 'inactive' ? 'selected' : ''; ?>>Not Activated</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Apply Filters</button>
+                    <a href="students.php" class="btn btn-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h4><?php echo $total_students; ?></h4>
+                    <h4><?php echo $total_students; ?>/<?php echo $all_total; ?></h4>
                     <p class="mb-0">Total Students</p>
                 </div>
             </div>
@@ -161,16 +269,16 @@ include '../includes/admin_sidebar.php';
         <div class="col-md-4">
             <div class="card bg-success text-white">
                 <div class="card-body">
-                    <h4><?php echo $active_students; ?></h4>
-                    <p class="mb-0">Active Students</p>
+                    <h4><?php echo $voted_students; ?>/<?php echo $all_voted; ?></h4>
+                    <p class="mb-0">Voted</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card bg-danger text-white">
                 <div class="card-body">
-                    <h4><?php echo $inactive_students; ?></h4>
-                    <p class="mb-0">Inactive Students</p>
+                    <h4><?php echo $not_voted_students; ?>/<?php echo $all_not_voted; ?></h4>
+                    <p class="mb-0">Not Voted</p>
                 </div>
             </div>
         </div>
@@ -191,7 +299,8 @@ include '../includes/admin_sidebar.php';
                             <th>Name</th>
                             <th>Grade & Section</th>
                             <th>Voter ID</th>
-                            <th>Status</th>
+                            <th>Vote Status</th>
+                            <th>Account Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -204,20 +313,25 @@ include '../includes/admin_sidebar.php';
                                 <td><?php echo htmlspecialchars('Grade ' . $student['grade'] . '-' . $student['section']); ?></td>
                                 <td><code><?php echo htmlspecialchars($student['voter_id_card']); ?></code></td>
                                 <td>
+                                    <span class="badge <?php echo $student['has_voted'] ? 'bg-success' : 'bg-warning'; ?>">
+                                        <?php echo $student['has_voted'] ? 'VOTED' : 'NOT VOTE'; ?>
+                                    </span>
+                                </td>
+                                <td>
                                     <span class="badge <?php echo $student['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
-                                        <?php echo $student['is_active'] ? 'Active' : 'Inactive'; ?>
+                                        <?php echo $student['is_active'] ? 'ACTIVATED' : 'NOT ACTIVATED'; ?>
                                     </span>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <form method="POST" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                            <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
-                                            <input type="hidden" name="action" value="<?php echo $student['is_active'] ? 'deactivate' : 'activate'; ?>">
-                                            <button type="submit" class="btn btn-outline-<?php echo $student['is_active'] ? 'warning' : 'success'; ?> btn-sm">
-                                                <?php echo $student['is_active'] ? 'Deactivate' : 'Activate'; ?>
-                                            </button>
-                                        </form>
+                                        <?php if (!$student['is_active']): ?>
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to activate this student account?')">
+                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                                <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
+                                                <input type="hidden" name="action" value="activate">
+                                                <button type="submit" class="btn btn-outline-success btn-sm">Activate</button>
+                                            </form>
+                                        <?php endif; ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this student? This action cannot be undone.')">
                                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                             <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">

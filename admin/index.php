@@ -25,7 +25,7 @@ $settings = [
     'school_id' => $school_info['school_id_no'] ?? 'SHS-2026',
     'principal' => $school_info['principal_name'] ?? 'Dr. Juan Santos',
     'logo_path' => $election_settings['logo_path'] ?? '../assets/images/logo_1770105233.png',
-    'theme_color' => $election_settings['theme_color'] ?? '#343a40',
+    'theme_color' => $election_settings['theme_color'] ?? '#ffffff',
     'school_classification' => 'Small'
 ];
 
@@ -55,7 +55,7 @@ include '../includes/admin_sidebar.php';
 }
 .dashboard-header {
     background: #007a1b;
-    color: #fff;
+    color: #ffffff;
     padding: 3rem 0;
     margin-bottom: 2rem;
     border-radius: 0 0 20px 20px;
@@ -349,9 +349,9 @@ include '../includes/admin_sidebar.php';
                     <i class="fas fa-cog"></i>
                     <span>Manage Election</span>
                 </a>
-                <a href="../admin_login.php" class="action-btn">
+                <a href="settings.php" class="action-btn">
                     <i class="fas fa-toggle-on"></i>
-                    <span>Voting Control</span>
+                    <span>Admin Settings</span>
                 </a>
             </div>
         </div>

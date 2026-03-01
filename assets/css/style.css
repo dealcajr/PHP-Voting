@@ -59,7 +59,7 @@ body {
 }
 
 .table tbody tr:hover {
-    background-color: #007a1b;
+    background-color: #dedede;
 }
 
 .badge {

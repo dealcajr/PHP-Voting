@@ -18,15 +18,16 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Get school name
+// Get school name and logo
 $db = getDBConnection();
-$stmt = $db->query("SELECT school_name FROM school_info LIMIT 1");
-$school_name = $stmt->fetchColumn();
+$stmt = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1");
+$school_info = $stmt->fetch();
+$school_name = $school_info['school_name'] ?? APP_NAME;
+$school_logo_path = $school_info['logo_path'] ?? 'admin/assets/images/logo_1770187955.png';
 
 // Get theme settings
-$election = $db->query("SELECT theme_color, logo_path FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
+$election = $db->query("SELECT theme_color FROM election_settings ORDER BY id DESC LIMIT 1")->fetch();
 $theme_color = $election['theme_color'] ?? '#343a40';
-$logo_path = $election['logo_path'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -63,8 +64,8 @@ $logo_path = $election['logo_path'] ?? null;
 <body>
     <div class="welcome-section">
         <div class="container text-center">
-            <?php if ($logo_path && file_exists($logo_path)): ?>
-                <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="School Logo" class="mb-3" style="max-height: 100px;">
+            <?php if ($school_logo_path): ?>
+                <img src="<?php echo htmlspecialchars($school_logo_path); ?>" alt="School Logo" class="mb-3" style="max-height: 100px; object-fit: contain;">
             <?php endif; ?>
             <h1 class="display-4 fw-bold">Election Control</h1>
             <p class="lead">Student Voting Portal</p>

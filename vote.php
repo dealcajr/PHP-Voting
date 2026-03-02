@@ -23,7 +23,38 @@ if (!$election || !$election['is_open']) {
 
 // Check if user has already voted for all positions
 $user_id = $_SESSION['user_id'];
-$positions_stmt = $db->query("SELECT DISTINCT position FROM candidates WHERE is_active = 1 ORDER BY position");
+$voter_grade = $_SESSION['grade'] ?? null;
+
+// Define which positions each grade can vote for
+$allowed_positions = [];
+
+if ($voter_grade === '7') {
+    // Grade 7 voters can only vote for Grade 8 Representative and JHS Vice President
+    $allowed_positions = ['Grade 8 Representative', 'Junior High School Vice President'];
+} elseif ($voter_grade === '8') {
+    // Grade 8 voters can only vote for Grade 8 Representative and JHS Vice President
+    $allowed_positions = ['Grade 9 Representative', 'Junior High School Vice President'];
+} elseif ($voter_grade === '9') {
+    // Grade 9 voters can only vote for Grade 10 Representative and JHS Vice President
+    $allowed_positions = ['Grade 10 Representative', 'Junior High School Vice President'];
+} elseif ($voter_grade === '10') {
+    // Grade 10 voters can only vote for Grade 11 Representative and SHS Vice President
+    $allowed_positions = ['Grade 11 Representative', 'Senior High School Vice President'];
+} elseif ($voter_grade === '11') {
+    // Grade 11 voters can only vote for Grade 12 Representative and SHS Vice President
+    $allowed_positions = ['Grade 12 Representative', 'Senior High School Vice President'];
+} elseif ($voter_grade === '12') {
+} else {
+    // Unknown grade - allow all positions
+}
+
+// Get positions from database (filtered by grade if applicable)
+if (!empty($allowed_positions)) {
+    $positions_stmt = $db->prepare("SELECT DISTINCT position FROM candidates WHERE is_active = 1 AND position IN ('" . implode("','", $allowed_positions) . "') ORDER BY position");
+    $positions_stmt->execute();
+} else {
+    $positions_stmt = $db->query("SELECT DISTINCT position FROM candidates WHERE is_active = 1 ORDER BY position");
+}
 $positions = $positions_stmt->fetchAll(PDO::FETCH_COLUMN);
 $has_voted_all = true;
 if ($positions) {
@@ -55,21 +86,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
         if (empty($votes)) {
             $message = '<div class="alert alert-danger">Please select at least one candidate.</div>';
         } else {
-            try {
-                $db->beginTransaction();
-                $votes_cast = 0;
-                $has_error  = false;
-
+            // Validate that voter is only voting for allowed positions based on their grade
+            if (!empty($allowed_positions)) {
                 foreach ($votes as $position => $candidate_data) {
-                    if (is_array($candidate_data)) {
-                        if (in_array($position, $multi_vote_positions) && count($candidate_data) > 2) {
-                            $message = "<div class='alert alert-danger'>You can vote for a maximum of 2 candidates for $position.</div>";
-                            $has_error = true;
-                            break;
-                        }
-                        foreach ($candidate_data as $candidate_id) {
-                            $stmt = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ? AND candidate_id = ?");
-                            $stmt->execute([$user_id, $position, $candidate_id]);
+                    if (!in_array($position, $allowed_positions)) {
+                        $message = '<div class="alert alert-danger">You are not allowed to vote for this position.</div>';
+                        $has_error = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!$has_error) {
+                try {
+                    $db->beginTransaction();
+                    $votes_cast = 0;
+                    $has_error  = false;
+
+                    foreach ($votes as $position => $candidate_data) {
+                        if (is_array($candidate_data)) {
+                            if (in_array($position, $multi_vote_positions) && count($candidate_data) > 2) {
+                                $message = "<div class='alert alert-danger'>You can vote for a maximum of 2 candidates for $position.</div>";
+                                $has_error = true;
+                                break;
+                            }
+                            foreach ($candidate_data as $candidate_id) {
+                                $stmt = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ? AND candidate_id = ?");
+                                $stmt->execute([$user_id, $position, $candidate_id]);
+                                if (!$stmt->fetch()) {
+                                    $stmt = $db->prepare("SELECT * FROM candidates WHERE id = ? AND is_active = 1");
+                                    $stmt->execute([$candidate_id]);
+                                    $candidate = $stmt->fetch();
+                                    if ($candidate) {
+                                        $vote_hash = hash('sha256', $user_id . $candidate_id . $position . time());
+                                        $db->prepare("INSERT INTO votes (voter_id, candidate_id, position, vote_hash) VALUES (?, ?, ?, ?)")
+                                           ->execute([$user_id, $candidate_id, $position, $vote_hash]);
+                                        $votes_cast++;
+                                    }
+                                }
+                            }
+                        } else {
+                            $candidate_id = $candidate_data;
+                            $stmt = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ?");
+                            $stmt->execute([$user_id, $position]);
                             if (!$stmt->fetch()) {
                                 $stmt = $db->prepare("SELECT * FROM candidates WHERE id = ? AND is_active = 1");
                                 $stmt->execute([$candidate_id]);
@@ -82,56 +141,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_vote'])) {
                                 }
                             }
                         }
-                    } else {
-                        $candidate_id = $candidate_data;
-                        $stmt = $db->prepare("SELECT id FROM votes WHERE voter_id = ? AND position = ?");
-                        $stmt->execute([$user_id, $position]);
-                        if (!$stmt->fetch()) {
-                            $stmt = $db->prepare("SELECT * FROM candidates WHERE id = ? AND is_active = 1");
-                            $stmt->execute([$candidate_id]);
-                            $candidate = $stmt->fetch();
-                            if ($candidate) {
-                                $vote_hash = hash('sha256', $user_id . $candidate_id . $position . time());
-                                $db->prepare("INSERT INTO votes (voter_id, candidate_id, position, vote_hash) VALUES (?, ?, ?, ?)")
-                                   ->execute([$user_id, $candidate_id, $position, $vote_hash]);
-                                $votes_cast++;
-                            }
+                    }
+
+                    if (!$has_error) {
+                        $db->commit();
+                        if ($votes_cast > 0) {
+                            // Mark voter as having voted (one-time vote only)
+                            $db->prepare("UPDATE users SET has_voted = 1 WHERE id = ?")->execute([$user_id]);
+
+                            // Set one-time success flag and voter name for the success page
+                            $_SESSION['vote_success'] = true;
+                            $_SESSION['voter_display_name'] = $_SESSION['first_name'] ?? '';
+                            header('Location: vote_success.php');
+                            exit();
+                        } else {
+                            $message = '<div class="alert alert-info">You have already voted for all selected positions.</div>';
                         }
-                    }
-                }
-
-                if (!$has_error) {
-                    $db->commit();
-                    if ($votes_cast > 0) {
-                        // Mark voter as having voted (one-time vote only)
-                        $db->prepare("UPDATE users SET has_voted = 1 WHERE id = ?")->execute([$user_id]);
-
-                        // Set one-time success flag and voter name for the success page
-                        $_SESSION['vote_success'] = true;
-                        $_SESSION['voter_display_name'] = $_SESSION['first_name'] ?? '';
-                        header('Location: vote_success.php');
-                        exit();
                     } else {
-                        $message = '<div class="alert alert-info">You have already voted for all selected positions.</div>';
+                        $db->rollBack();
                     }
-                } else {
-                    $db->rollBack();
-                }
 
-            } catch (PDOException $e) {
-                $db->rollBack();
-                $message = '<div class="alert alert-danger">Database error: ' . $e->getMessage() . '</div>';
-                error_log("Vote submission error: " . $e->getMessage());
+                } catch (PDOException $e) {
+                    $db->rollBack();
+                    $message = '<div class="alert alert-danger">Database error: ' . $e->getMessage() . '</div>';
+                    error_log("Vote submission error: " . $e->getMessage());
+                }
             }
         }
     }
 }
 
-// Get candidates grouped by position
+// Get candidates grouped by position (filtered by voter grade)
 $candidates_by_position = [];
 if ($positions) {
     foreach ($positions as $position) {
-        $stmt = $db->prepare("SELECT * FROM candidates WHERE position = ? AND is_active = 1 ORDER BY name");
+        // For Grade 7, only show candidates that match allowed positions
+        if ($voter_grade === '7') {
+            $stmt = $db->prepare("SELECT * FROM candidates WHERE position = ? AND is_active = 1 ORDER BY name");
+        } else {
+            $stmt = $db->prepare("SELECT * FROM candidates WHERE position = ? AND is_active = 1 ORDER BY name");
+        }
         $stmt->execute([$position]);
         $candidates_by_position[$position] = $stmt->fetchAll();
     }

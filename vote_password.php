@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $db = getDBConnection();
-                $stmt = $db->prepare("SELECT password_hash, role, is_active, has_voted FROM users WHERE id = ?");
+                $stmt = $db->prepare("SELECT password_hash, role, is_active, has_voted, grade FROM users WHERE id = ?");
                 $stmt->execute([$_SESSION['voting_user_id']]);
                 $user = $stmt->fetch();
 
@@ -48,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['student_id'] = $_SESSION['voting_student_id'];
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['first_name'] = $_SESSION['voting_name'];
+                        $_SESSION['grade'] = $user['grade']; // Store voter grade for position filtering
 
                         // Clear temporary voting session data
                         unset($_SESSION['voting_lrn']);

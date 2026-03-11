@@ -9,10 +9,27 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 $db = getDBConnection();
 
+// Define position order for consistent sorting
+$position_order = [
+    'President',
+    'Junior High School Vice President',
+    'Senior High School Vice President',
+    'Secretary',
+    'Treasurer',
+    'Auditor',
+    'Public Information Officer',
+    'Peace Officer',
+    'Grade 8 Representative',
+    'Grade 9 Representative',
+    'Grade 10 Representative',
+    'Grade 11 Representative',
+    'Grade 12 Representative'
+];
+
 // Fetch school info
 $school_info = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1")->fetch();
 $school_name = $school_info['school_name'] ?? APP_NAME;
-$school_logo = !empty($school_info['logo_path']) ? '../admin/assets/images/logo_1770187955.png' . $school_info['logo_path'] : '../admin/assets/images/logo_1770187955.png';
+$school_logo = !empty($school_info['logo_path']) ? '../' . $school_info['logo_path'] : '../admin/assets/images/logo_1770187955.png';
 
 try {
     $stmt = $db->query(
@@ -24,6 +41,19 @@ try {
         "ORDER BY c.position ASC, c.name ASC"
     );
     $candidates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Sort candidates by position order
+    usort($candidates, function($a, $b) use ($position_order) {
+        $pos_a = array_search($a['position'], $position_order);
+        $pos_b = array_search($b['position'], $position_order);
+        $pos_a = ($pos_a === false) ? PHP_INT_MAX : $pos_a;
+        $pos_b = ($pos_b === false) ? PHP_INT_MAX : $pos_b;
+        if ($pos_a === $pos_b) {
+            return strcmp($a['name'], $b['name']);
+        }
+        return $pos_a - $pos_b;
+    });
+    
     // Prefix photo paths with ../ for correct URL from admin folder
     foreach ($candidates as &$c) {
         if (!empty($c['photo'])) {

@@ -9,6 +9,23 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 $db = getDBConnection();
 
+// Define position order for consistent sorting
+$position_order = [
+    'President',
+    'Junior High School Vice President',
+    'Senior High School Vice President',
+    'Secretary',
+    'Treasurer',
+    'Auditor',
+    'Public Information Officer',
+    'Peace Officer',
+    'Grade 8 Representative',
+    'Grade 9 Representative',
+    'Grade 10 Representative',
+    'Grade 11 Representative',
+    'Grade 12 Representative'
+];
+
 // Fetch school info
 $school_info = $db->query("SELECT school_name, logo_path FROM school_info LIMIT 1")->fetch();
 $school_name = $school_info['school_name'] ?? APP_NAME;
@@ -40,6 +57,15 @@ try {
             $winners[$pos] = $cand;
         }
     }
+    
+    // Sort winners by position order
+    uksort($winners, function($a, $b) use ($position_order) {
+        $pos_a = array_search($a, $position_order);
+        $pos_b = array_search($b, $position_order);
+        $pos_a = ($pos_a === false) ? PHP_INT_MAX : $pos_a;
+        $pos_b = ($pos_b === false) ? PHP_INT_MAX : $pos_b;
+        return $pos_a - $pos_b;
+    });
 } catch (PDOException $e) {
     die("Database error: " . htmlspecialchars($e->getMessage()));
 }
@@ -127,7 +153,7 @@ try {
         <div class="signatures-row">
             <?php
             // Map commissioner types to display order
-            $typeOrder = ['chief' => 0, 'screening' => 1, 'electoral' => 2];
+            $typeOrder = ['Chief Commissioner' => 0, 'Commissioner on Screening & Validation' => 1, 'Commissioner of Electoral Board' => 2];
             $sigMap = [0 => '', 1 => '', 2 => ''];
             foreach ($commissioners as $c) {
                 $idx = $typeOrder[$c['commission_type']] ?? -1;

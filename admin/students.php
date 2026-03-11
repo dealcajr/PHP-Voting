@@ -36,6 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_csv'])) {
                         continue;
                     }
                     
+                    // Skip Grade 12 students - not eligible to vote
+                    if ($grade == '12') {
+                        $errors[] = "Skipped $student_id: Grade 12 students are not eligible to register or vote";
+                        continue;
+                    }
+                    
                     // Validate LRN is exactly 12 digits
                     if (!preg_match('/^\d{12}$/', $lrn)) {
                         $errors[] = "Invalid LRN for $student_id: LRN must be exactly 12 digits";
@@ -115,6 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if ($role === 'admin') {
                     $message = '<div class="alert alert-danger">Cannot delete admin users.</div>';
                 } else {
+                    // First delete all votes by this user to prevent orphaned votes
+                    $db->prepare("DELETE FROM votes WHERE voter_id = ?")->execute([$student_id]);
                     $db->prepare("DELETE FROM users WHERE id = ?")->execute([$student_id]);
                     logAdminAction('student_deleted', "Deleted student ID: $student_id");
                     $message = '<div class="alert alert-success">Student deleted successfully.</div>';
@@ -146,12 +154,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
                     $db->prepare("UPDATE users SET is_active = 1 WHERE id IN ($placeholders) AND role = 'voter'")->execute($selected_ids);
                     logAdminAction('bulk_activate', "Bulk activated " . count($selected_ids) . " students");
                     $message = '<div class="alert alert-success">Selected students activated successfully.</div>';
-                } elseif ($bulk_action === 'bulk_delete') {
-                    // Only delete voters, never admins
-                    $db->prepare("DELETE FROM users WHERE id IN ($placeholders) AND role = 'voter'")->execute($selected_ids);
-                    logAdminAction('bulk_delete', "Bulk deleted " . count($selected_ids) . " students");
-                    $message = '<div class="alert alert-success">Selected students deleted successfully.</div>';
-                }
+                } 
+                    if ($bulk_action === 'bulk_delete') {
+                        // Only delete voters, never admins
+                        // First delete all votes by these users to prevent orphaned votes
+                        $db->prepare("DELETE FROM votes WHERE voter_id IN ($placeholders)")->execute($selected_ids);
+                        $db->prepare("DELETE FROM users WHERE id IN ($placeholders) AND role = 'voter'")->execute($selected_ids);
+                        logAdminAction('bulk_delete', "Bulk deleted " . count($selected_ids) . " students");
+                        $message = '<div class="alert alert-success">Selected students deleted successfully.</div>';
+                    }
             } catch (PDOException $e) {
                 $message = '<div class="alert alert-danger">Database error: ' . $e->getMessage() . '</div>';
             }

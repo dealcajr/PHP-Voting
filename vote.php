@@ -28,22 +28,38 @@ $voter_grade = $_SESSION['grade'] ?? null;
 // Define which positions each grade can vote for
 $allowed_positions = [];
 
+// Define position order for consistent sorting
+$position_order = [
+    'President',
+    'Junior High School Vice President',
+    'Senior High School Vice President',
+    'Secretary',
+    'Treasurer',
+    'Auditor',
+    'Public Information Officer',
+    'Peace Officer',
+    'Grade 8 Representative',
+    'Grade 9 Representative',
+    'Grade 10 Representative',
+    'Grade 11 Representative',
+    'Grade 12 Representative'
+];
+
 if ($voter_grade === '7') {
     // Grade 7 voters can only vote for Grade 8 Representative and JHS Vice President
-    $allowed_positions = ['Grade 8 Representative', 'Junior High School Vice President'];
+    $allowed_positions = ['President', 'Junior High School Vice President', 'Secretary', 'Treasurer', 'Auditor', 'Public Information Officer', 'Peace Officer', 'Grade 8 Representative'];
 } elseif ($voter_grade === '8') {
-    // Grade 8 voters can only vote for Grade 8 Representative and JHS Vice President
-    $allowed_positions = ['Grade 9 Representative', 'Junior High School Vice President'];
+    // Grade 8 voters can only vote for Grade 9 Representative and JHS Vice President
+    $allowed_positions = ['President', 'Junior High School Vice President', 'Secretary', 'Treasurer', 'Auditor', 'Public Information Officer', 'Peace Officer', 'Grade 9 Representative'];
 } elseif ($voter_grade === '9') {
     // Grade 9 voters can only vote for Grade 10 Representative and JHS Vice President
-    $allowed_positions = ['Grade 10 Representative', 'Junior High School Vice President'];
+    $allowed_positions = ['President', 'Junior High School Vice President', 'Secretary', 'Treasurer', 'Auditor', 'Public Information Officer', 'Peace Officer', 'Grade 10 Representative'];
 } elseif ($voter_grade === '10') {
     // Grade 10 voters can only vote for Grade 11 Representative and SHS Vice President
-    $allowed_positions = ['Grade 11 Representative', 'Senior High School Vice President'];
+    $allowed_positions = ['President', 'Senior High School Vice President', 'Secretary', 'Treasurer', 'Auditor', 'Public Information Officer', 'Peace Officer', 'Grade 11 Representative'];
 } elseif ($voter_grade === '11') {
     // Grade 11 voters can only vote for Grade 12 Representative and SHS Vice President
-    $allowed_positions = ['Grade 12 Representative', 'Senior High School Vice President'];
-} elseif ($voter_grade === '12') {
+    $allowed_positions = ['President', 'Senior High School Vice President', 'Secretary', 'Treasurer', 'Auditor', 'Public Information Officer', 'Peace Officer', 'Grade 12 Representative'];
 } else {
     // Unknown grade - allow all positions
 }
@@ -56,6 +72,15 @@ if (!empty($allowed_positions)) {
     $positions_stmt = $db->query("SELECT DISTINCT position FROM candidates WHERE is_active = 1 ORDER BY position");
 }
 $positions = $positions_stmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Sort positions according to the defined order
+usort($positions, function($a, $b) use ($position_order) {
+    $pos_a = array_search($a, $position_order);
+    $pos_b = array_search($b, $position_order);
+    $pos_a = ($pos_a === false) ? PHP_INT_MAX : $pos_a;
+    $pos_b = ($pos_b === false) ? PHP_INT_MAX : $pos_b;
+    return $pos_a - $pos_b;
+});
 $has_voted_all = true;
 if ($positions) {
     foreach ($positions as $position) {

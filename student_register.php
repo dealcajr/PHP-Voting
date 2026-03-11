@@ -36,6 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = '<div class="alert alert-danger">Name, LRN, grade, and section are required.</div>';
         } elseif (!preg_match('/^\d{12}$/', $lrn)) {
             $message = '<div class="alert alert-danger">LRN must be exactly 12 digits.</div>';
+        } elseif ($grade == '12') {
+            $message = '<div class="alert alert-danger">Grade 12 students are not eligible to register or vote in this election.</div>';
         } elseif (($grade == '11' || $grade == '12') && empty($track)) {
 
             $message = '<div class="alert alert-danger">Track is required for Senior High School students (Grades 11-12).</div>';
@@ -195,10 +197,6 @@ $theme_color = $election['theme_color'] ?? '#343a40';
                         <button type="button" class="btn btn-primary btn-lg" id="registerBtn" data-bs-toggle="modal" data-bs-target="#confirmModal">Register</button>
                     </div>
                 </form>
-
-                <div class="text-center mt-3">
-                    <a href="index.php" class="text-muted">← Back to Main Menu</a>
-                </div>
             </div>
         </div>
     </div>
@@ -382,7 +380,13 @@ $theme_color = $election['theme_color'] ?? '#343a40';
                     const trackContainer = document.getElementById('track-container');
                     const trackSelect = document.getElementById('track');
 
-                    if (grade === '11' || grade === '12') {
+                    if (grade === '12') {
+                        alert('Grade 12 students are not eligible to register or vote in this election.');
+                        this.value = '';
+                        trackContainer.style.display = 'none';
+                        trackSelect.required = false;
+                        trackSelect.value = '';
+                    } else if (grade === '11') {
                         trackContainer.style.display = 'block';
                         trackSelect.required = true;
                     } else {

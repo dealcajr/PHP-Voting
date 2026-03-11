@@ -5,6 +5,25 @@ requireRole('admin');
 $db = getDBConnection();
 $message = '';
 
+// Define position order for consistent sorting
+$position_order = [
+    'President',
+    'Junior High School Vice President',
+    'Senior High School Vice President',
+    'Secretary',
+    'Treasurer',
+    'Auditor',
+    'Public Information Officer',
+    'Peace Officer',
+    'Grade 8 Representative',
+    'Grade 9 Representative',
+    'Grade 10 Representative',
+    'Grade 11 Representative',
+    'Grade 12 Representative'
+];
+
+$default_positions = $position_order;
+
 // Handle form submission for adding/editing candidates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_candidate'])) {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
@@ -134,10 +153,30 @@ $stmt = $db->prepare($query);
 $stmt->execute($params);
 $candidates = $stmt->fetchAll();
 
+// Sort candidates by position order
+usort($candidates, function($a, $b) use ($position_order) {
+    $pos_a = array_search($a['position'], $position_order);
+    $pos_b = array_search($b['position'], $position_order);
+    $pos_a = ($pos_a === false) ? PHP_INT_MAX : $pos_a;
+    $pos_b = ($pos_b === false) ? PHP_INT_MAX : $pos_b;
+    if ($pos_a === $pos_b) {
+        return strcmp($a['name'], $b['name']);
+    }
+    return $pos_a - $pos_b;
+});
+
 // Get all distinct values for filter dropdowns
 $all_positions = $db->query("SELECT DISTINCT position FROM candidates WHERE position IS NOT NULL AND position != '' ORDER BY position")->fetchAll(PDO::FETCH_COLUMN);
-$default_positions = ['President', 'Junior High School Vice President', 'Senior High School Vice President', 'Secretary', 'Treasurer', 'Auditor', 'Public Information Officer', 'Grade 8 Representative', 'Grade 9 Representative', 'Grade 10 Representative', 'Grade 11 Representative', 'Grade 12 Representative'];
 $all_positions = array_unique(array_merge($default_positions, $all_positions));
+
+// Sort positions according to the defined order (positions not in order list go to the end)
+usort($all_positions, function($a, $b) use ($position_order) {
+    $pos_a = array_search($a, $position_order);
+    $pos_b = array_search($b, $position_order);
+    $pos_a = ($pos_a === false) ? PHP_INT_MAX : $pos_a;
+    $pos_b = ($pos_b === false) ? PHP_INT_MAX : $pos_b;
+    return $pos_a - $pos_b;
+});
 
 $all_grades = $db->query("SELECT DISTINCT grade FROM candidates ORDER BY CAST(grade AS UNSIGNED)")->fetchAll(PDO::FETCH_COLUMN);
 
@@ -233,7 +272,7 @@ include '../includes/admin_sidebar.php';
                                 <td><?php echo htmlspecialchars($candidate['name']); ?></td>
                                 <td><?php echo htmlspecialchars($candidate['position']); ?></td>
                                 <td><?php echo htmlspecialchars($candidate['party'] ?? 'Independent'); ?></td>
-                                <td><?php echo htmlspecialchars('Grade ' . $candidate['grade'] . '-' . $candidate['section']); ?></td>
+                                <td><?php echo htmlspecialchars(($candidate['grade'] ? 'Grade ' . $candidate['grade'] : 'N/A') . ($candidate['section'] ? '-' . $candidate['section'] : '')); ?></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <button type="button" class="btn btn-outline-primary btn-sm edit-candidate-btn" data-candidate='<?php echo htmlspecialchars(json_encode($candidate), ENT_QUOTES); ?>'>Edit</button>
@@ -321,8 +360,8 @@ include '../includes/admin_sidebar.php';
                         </div>
                         <div class="col-md-3">
                             <div class="mb-3">
-                                <label for="section" class="form-label">Section *</label>
-                                <input type="text" class="form-control" id="section" name="section" required>
+                                <label for="section" class="form-label">Section</label>
+                                <input type="text" class="form-control" id="section" name="section">
                             </div>
                         </div>
                     </div>

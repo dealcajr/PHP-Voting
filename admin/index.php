@@ -320,6 +320,32 @@ include '../includes/admin_sidebar.php';
     function renderResults(data) {
         var results = data.results;
         var positions = Object.keys(results);
+        
+        // Define position order
+        var positionOrder = [
+            'President',
+            'Junior High School Vice President',
+            'Senior High School Vice President',
+            'Secretary',
+            'Treasurer',
+            'Auditor',
+            'Public Information Officer',
+            'Peace Officer',
+            'Grade 8 Representative',
+            'Grade 9 Representative',
+            'Grade 10 Representative',
+            'Grade 11 Representative',
+            'Grade 12 Representative'
+        ];
+        
+        // Sort positions according to defined order
+        positions.sort(function(a, b) {
+            var posA = positionOrder.indexOf(a);
+            var posB = positionOrder.indexOf(b);
+            if (posA === -1) posA = Infinity;
+            if (posB === -1) posB = Infinity;
+            return posA - posB;
+        });
 
         if (positions.length === 0) {
             container.innerHTML = '<div class="no-data">No candidates found.</div>';

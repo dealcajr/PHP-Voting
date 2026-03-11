@@ -511,30 +511,19 @@ if ($school_level === 'Elementary') {
                     const schoolClass = "<?= $settings['school_classification'] ?>";
                     let order = [
                         'President',
-                        'Vice President',
+                        'Junior High School Vice President',
+                        'Senior High School Vice President',
                         'Secretary',
                         'Treasurer',
                         'Auditor',
                         'Public Information Officer',
-                        'Protocol Officer'
+                        'Peace Officer',
+                        'Grade 8 Representative',
+                        'Grade 9 Representative',
+                        'Grade 10 Representative',
+                        'Grade 11 Representative',
+                        'Grade 12 Representative'
                     ];
-
-                    if (['Small', 'Medium'].includes(schoolClass)) {
-                        order.push(
-                            'Grade 10 Representative',
-                            'Grade 9 Representative',
-                            'Grade 8 Representative'
-                        );
-                    } else {
-                        order.push(
-                            'Grade 10 Representative 1',
-                            'Grade 10 Representative 2',
-                            'Grade 9 Representative 1',
-                            'Grade 9 Representative 2',
-                            'Grade 8 Representative 1',
-                            'Grade 8 Representative 2'
-                        );
-                    }
 
                     let grouped = {};
                     data.forEach(row => {

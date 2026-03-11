@@ -34,6 +34,23 @@ if (!$election['is_open']) {
 
 $show_results = $can_view_results;
 
+// Define position order for consistent sorting
+$position_order = [
+    'President',
+    'Junior High School Vice President',
+    'Senior High School Vice President',
+    'Secretary',
+    'Treasurer',
+    'Auditor',
+    'Public Information Officer',
+    'Peace Officer',
+    'Grade 8 Representative',
+    'Grade 9 Representative',
+    'Grade 10 Representative',
+    'Grade 11 Representative',
+    'Grade 12 Representative'
+];
+
 if ($show_results) {
     // Get all candidate results in a single, more efficient query
     $stmt = $db->query("
@@ -51,6 +68,15 @@ if ($show_results) {
     foreach ($all_candidates as $candidate) {
         $results[$candidate['position']][] = $candidate;
     }
+
+    // Sort results by position order
+    uksort($results, function($a, $b) use ($position_order) {
+        $pos_a = array_search($a, $position_order);
+        $pos_b = array_search($b, $position_order);
+        $pos_a = ($pos_a === false) ? PHP_INT_MAX : $pos_a;
+        $pos_b = ($pos_b === false) ? PHP_INT_MAX : $pos_b;
+        return $pos_a - $pos_b;
+    });
 
     // Check for close elections (margin of 5 votes or less)
     $is_close = false;
